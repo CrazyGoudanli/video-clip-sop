@@ -1,0 +1,37 @@
+{
+ "properties": [
+  {
+   "key": "title",
+   "label": "标题(【】内为金色, 换行用\\n)",
+   "defaultValue": "联想那么贵\n为什么【还有人买】",
+   "type": "text"
+  },
+  {
+   "key": "english",
+   "label": "英文副标题",
+   "defaultValue": "WHY PEOPLE STILL BUY LENOVO",
+   "type": "text"
+  },
+  {
+   "key": "winTop",
+   "label": "视频窗顶",
+   "type": "number",
+   "defaultValue": 600
+  },
+  {
+   "key": "winBottom",
+   "label": "视频窗底",
+   "type": "number",
+   "defaultValue": 1268
+  },
+  {
+   "key": "accentColor",
+   "label": "金色",
+   "defaultValue": "#E9B949",
+   "type": "color"
+  }
+ ],
+ "width": 1080,
+ "height": 1920,
+ "duration": 120000000
+}

@@ -1,0 +1,38 @@
+# 剪辑工具:ChatCut(配置.剪辑工具 = ChatCut)
+
+> 来源:旧项目 chatcut-clipper 技能的实测做法(2026-11),整理为与本项目数据库配合的版本。
+> 前提:ChatCut 桌面版已安装并登录;驱动 AI 能调用 ChatCut 的工具接口(Claude Code 里叫 `chatcut_desktop`)。
+> 其他 AI:只要能调用同一套 ChatCut 工具接口即可;不能调用时改用 `剪辑_ffmpeg.md`。
+
+## 费用红线(最重要)
+- **只用剪辑、字幕、导出类工具。** 禁止:`submit_video`、`submit_image`、`submit_music`、`submit_sound`、`submit_voice`、`submit_avatar_video`、`submit_lipsync`、`submit_video_remake`、`submit_generation_batch`、`video_translation`,以及 ChatCut 内置 AI 对话。
+- 禁止:`delete_project`、`restore_project`、`upload_project_diagnostics`。
+- 每批开始前、结束后各调用一次 `read_billing`;余额变少 → 立即停止,该条标需人工。
+
+## 步骤(每条切片)
+1. `create_project`「切片 YYYY-MM-DD」(同一天共用一个项目);记下项目 ID,登记 `update clip <ID> 剪辑工程=<项目ID>`。
+2. `push_asset` 推入截好的片段(环节 2 第 3 步的 excerpts 文件)。推入后会自动转写;用 `track_progress` 等转写完成。
+3. 把 `3-工具/模板/{packaging,quote,sub_caption}.jsx` 复制进项目工作区,按 `*.props.json` 的属性推入两个动效:标题栏、金句卡。
+4. `manage_timelines` 新建时间线,名称 `<切片ID> <短标题>`。**必须先把画布设为 1080×1920、30fps**(默认"跟随第一个画面"会变横屏)。
+5. 精剪:`read_script` → 在文稿里用 `~~删除~~` 标记删掉的内容,钩子句提到最前 → `apply_script`。可先用 `clean_script` 做口水词初筛。
+6. 版式:
+   - 视频窗口:left -54 / top 600 / 1188×668。
+   - V2 标题栏铺满全片:title 两行,【】标重点词;english 全大写一句。不放期号、日期。
+   - V3 金句卡 4–6 张,每张约 3–4 秒,属性 lead / main(两行,【】重点词);第 0 帧放一张当钩子,最后一张"划重点"。
+   - 字幕:`edit_captions` 开启 → 套用 sub_caption 模板,单行 ≤15 字;轨道布局 {left 60, top 1660, width 960, height 100}。
+7. 校字幕:`read_captions` 逐卡看,错字用 `edit_captions` 改(要带 revision)。
+8. 自检:`preview_timeline` 取 6 帧,确认标题栏、视频、金句卡、字幕不遮挡、不出框。
+9. 导出:
+   - 视频:`export` format=video, resolution=1080p, fps=30, videoProfile=sdr_h264, timelineId=<id>,输出到临时文件 `raw.mp4`;`track_progress target=export action=wait` 等完成。
+   - 字幕:`export` format=subtitles, subtitleFormat=srt,直接输出到成片文件夹,然后 `chmod 644`(导出权限是 600)。
+   - 写编号(不重编码):`ffmpeg -i raw.mp4 -map 0 -c copy -movflags +faststart -metadata comment="<切片ID>" -metadata title="<短标题>" <成片路径>`
+   - 校验:`ffprobe -v error -show_entries format=duration:format_tags=comment -show_entries stream=width,height,codec_name <成片>`,应为 1080×1920、h264+aac、comment=切片ID。
+10. 回到环节 2 第 7 步登记。
+
+## 已知坑
+- 新时间线默认可能是横屏,第 4 步必须先改画布。
+- 导出的字幕文件权限是 600,要改 644。
+- **标题栏英文副标题不要超过约 28 个字符**,否则左右出框(2026-11-23 试跑出现)。自检抽帧时专门看这一行。
+- 精剪后时长可能低于 60 秒,要回补句子再导出(试跑第一版 48 秒)。
+- 结尾必须落在完整的金句上,不要留"第二个干嘛?"这类话说一半的句子。
+- 无人值守时(Claude Code):用 `3-工具/脚本/run_claude.sh` 启动;它会开放 ChatCut 工作区目录。权限规则里的用户主目录绝对路径要写成 `//Users/<你的用户名>/...`(双斜杠前缀)。

@@ -1,0 +1,31 @@
+{
+ "properties": [
+  {
+   "key": "lead",
+   "label": "引导小字",
+   "defaultValue": "划重点",
+   "type": "text"
+  },
+  {
+   "key": "main",
+   "label": "金句(【】金色)",
+   "defaultValue": "最大的区别不是性能\n而是【稳定性】",
+   "type": "text"
+  },
+  {
+   "key": "top",
+   "label": "顶部位置",
+   "type": "number",
+   "defaultValue": 1300
+  },
+  {
+   "key": "accentColor",
+   "label": "金色",
+   "defaultValue": "#F2B33D",
+   "type": "color"
+  }
+ ],
+ "width": 1080,
+ "height": 1920,
+ "duration": 4000000
+}

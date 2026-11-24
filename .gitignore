@@ -25,6 +25,20 @@ Thumbs.db
 *.swp
 .claude/settings.local.json
 
+# 用户文件夹:只上传说明,不上传内容
+待加工/*
+!待加工/README.md
+成片/*
+!成片/README.md
+参考/封面/*
+!参考/封面/README.md
+参考/视频风格/*
+!参考/视频风格/README.md
+学习/*
+!学习/README.md
+工作区/*
+!工作区/README.md
+
 # 临时媒体
 *.mp4
 *.mov
@@ -32,3 +46,6 @@ Thumbs.db
 *.srt
 tmp/
 .tmp/
+*.mkv
+*.m4v
+*.m4a

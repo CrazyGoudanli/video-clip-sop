@@ -60,6 +60,32 @@ def write_todo(todo):
     TODO_MD.write_text("\n".join(lines) + "\n")
 
 
+def end_line(logf):
+    """从运行日志里找最后一个结束行(【完成】/【需人工】/【失败】/【无事】)。
+    兼容纯文本输出和 Claude Code / Codex 的 JSON 流输出。
+    只看 AI 自己说的话(Claude Code 的 result、Codex 的 agent_message、纯文本行),
+    不看工具结果——AI 读过的说明文件里也有结束行的格式示例,不能算数。"""
+    import re
+    texts = []
+    for ln in logf.read_text(errors="ignore").splitlines():
+        try:
+            d = json.loads(ln)
+        except ValueError:
+            texts.append(ln)
+            continue
+        if not isinstance(d, dict):
+            continue
+        if d.get("type") == "result" and isinstance(d.get("result"), str):       # Claude Code
+            texts.append(d["result"])
+        item = d.get("item") if isinstance(d.get("item"), dict) else {}
+        if item.get("type") == "agent_message" and isinstance(item.get("text"), str):  # Codex
+            texts.append(item["text"])
+    found = []
+    for t in texts:
+        found += re.findall(r"【(?:完成|需人工|失败|无事)】[^\n]*", t)
+    return found[-1].strip() if found else ""
+
+
 def prompt_for(stage, ids):
     return (f"你在执行项目「视频剪辑SOP」(当前目录)。先读 AGENTS.md,然后只执行一个环节:{stage}。"
             f"对象:{', '.join(ids[:20])}。按 3-工具/环节/{stage}.md 的步骤做,所有状态修改只用 3-工具/db.py。"
@@ -126,9 +152,11 @@ def run_once(dry, force=False):
     try:
         with open(logf, "w") as lf:
             rc = subprocess.run(args, cwd=ROOT, stdout=lf, stderr=subprocess.STDOUT, timeout=3 * 3600).returncode
-        tail = logf.read_text(errors="ignore").strip().splitlines()[-1:] or [""]
-        ok = rc == 0 and not tail[0].startswith("【失败】")
-        print(f"[{stamp()}] {'✅' if ok else '❌'} {stage} 结束(返回码 {rc}):{tail[0][:200]}")
+        end = end_line(logf)
+        kind = end[1:3] if end else ""
+        ok = rc == 0 and kind in ("完成", "无事", "需人")
+        mark = {"完成": "✅", "无事": "✅", "需人": "👤"}.get(kind, "❌") if rc == 0 else "❌"
+        print(f"[{stamp()}] {mark} {stage} 结束(返回码 {rc}):{(end or '没有找到结束行')[:200]}")
         if ok:
             st["失败时间"].pop(stage, None)
             st["上次指纹"][stage] = fp

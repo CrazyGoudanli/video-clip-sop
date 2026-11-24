@@ -35,6 +35,14 @@ DB = pathlib.Path(os.environ["SOP_DB"]) if os.environ.get("SOP_DB") else ROOT / 
 TZ = timezone(timedelta(hours=8))
 MAX_REDO = int(CFG.get("重剪上限", 3))
 PREFIX = {"课程": "课", "直播": "直", "访谈": "访", "论坛": "论"}
+VIDEO_EXT = {".mp4", ".mov", ".mkv", ".m4v"}
+IMG_EXT = {".png", ".jpg", ".jpeg", ".webp"}
+
+
+def folder(key, default):
+    """配置里的文件夹:相对路径按项目根目录算,支持 ~。"""
+    p = pathlib.Path(os.path.expanduser(CFG.get(key, default)))
+    return p if p.is_absolute() else ROOT / p
 
 # ---------------- 状态机 ----------------
 # 每个状态 -> 允许转到的状态。标 * 的流转是人工关卡,只能 --by 人工。
@@ -219,16 +227,15 @@ def pending(c):
         if ids:
             todo.append({"环节": stage, "执行者": who, "对象": ids, "说明": note})
 
-    # 0 整理:原始录像目录根部有未整理的录像文件(按文件名日期分组)
-    raw = pathlib.Path(CFG.get("原始录像目录", "~/Movies")).expanduser()
-    days = set()
-    if raw.is_dir():
-        import re
-        for f in raw.iterdir():
-            m = re.match(r"^(\d{4})-(\d{2})-(\d{2})[ -]\d{2}-\d{2}-\d{2}\.mkv$", f.name, re.I)
-            if m and (t.timestamp() - f.stat().st_mtime) > 600:
-                days.add("".join(m.groups()))
-    add("0-整理", "AI", sorted(days), "原始录像目录里有已录完、未整理的录像(按日期)")
+    # 0 整理:待加工文件夹根部有已录完(10 分钟内没再写入)的录像文件
+    inbox = folder("待加工目录", "待加工")
+    files = []
+    if inbox.is_dir():
+        for f in sorted(inbox.iterdir()):
+            if f.is_file() and not f.name.startswith(".") and f.suffix.lower() in VIDEO_EXT \
+                    and (t.timestamp() - f.stat().st_mtime) > 600:
+                files.append(f.name)
+    add("0-整理", "AI", files, "待加工文件夹里有已录完、未整理的录像")
     add("1-复盘选片", "AI", q("select source_id from sources where 状态='已整理'"), "素材已整理,待转写、复盘、挑候选切片")
     add("人工-挑选", "人工", q("select clip_id from clips where 状态='候选'"), "候选切片等你挑:要剪的改'待剪'")
     stale = (t - timedelta(hours=3)).isoformat()
@@ -243,11 +250,22 @@ def pending(c):
             miss.append(cid)
     add("4-文案", "AI", miss, "看片已通过,还没有目标平台的发布草稿")
     ph = ",".join("?" * len(platforms))
-    add("5-封面", "AI", q(f"select publish_id from publishes where 状态='草稿' and 平台 in ({ph}) "
-                         "and coalesce(封面竖,'')='' and coalesce(封面,'')=''", *platforms), "草稿还没有封面")
-    add("人工-审核发布", "人工", q(f"select publish_id from publishes where 状态='草稿' and 平台 in ({ph}) "
-                              "and (coalesce(封面竖,'')!='' or coalesce(封面,'')!='')", *platforms),
-        "草稿已齐(文案+封面),等你审核:要发的改'待发布'")
+    # 封面三步:AI 出竖版候选(封面/候选/) → 用户选一张(写入 封面竖) → AI 按它出横版(封面横) → 用户审核
+    need_cand, need_pick, need_h, ready = [], [], [], []
+    for r in c.execute(f"select p.publish_id,p.封面竖,p.封面横,p.封面,k.本地文件夹 from publishes p left join clips k "
+                       f"on k.clip_id=p.clip_id where p.状态='草稿' and p.平台 in ({ph})", platforms):
+        v, h = r["封面竖"] or r["封面"], r["封面横"]
+        cand = ROOT / os.path.expanduser(r["本地文件夹"]) / "封面" / "候选" if r["本地文件夹"] else None
+        has_cand = bool(cand and cand.is_dir() and any(p.suffix.lower() in IMG_EXT for p in cand.iterdir()))
+        if not v:
+            (need_pick if has_cand else need_cand).append(r["publish_id"])
+        elif not h:
+            need_h.append(r["publish_id"])
+        else:
+            ready.append(r["publish_id"])
+    add("5-封面", "AI", need_cand + need_h, "草稿还没有封面候选,或已选定竖封面、还缺横版")
+    add("人工-选封面", "人工", need_pick, "封面候选已出,等你选一张(工作台「封面与发布」)")
+    add("人工-审核发布", "人工", ready, "草稿已齐(文案+竖横封面),等你审核:要发的改'待发布'")
     add("6-发布", "AI", q(f"select publish_id from publishes where 状态='待发布' and 平台 in ({ph})", *platforms),
         "已授权,待设定时发布")
     due_fill, due_metric = [], []

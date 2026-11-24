@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>视频剪辑 SOP 工作台</title>
+<style>
+:root{--bg:#0e1014;--side:#12151b;--card:#171b22;--card2:#1d222b;--line:#272c36;--text:#e8eaef;--dim:#8a91a0;--gold:#f5c518;--ok:#3ecf8e;--bad:#ff6b6b;--blue:#5aa9ff}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,"PingFang SC","Helvetica Neue",sans-serif;display:flex}
+a{color:var(--blue);cursor:pointer}button{font:inherit}
+/* 侧栏 */
+aside{width:210px;flex:none;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 12px}
+aside h1{font-size:16px;margin:0 8px 22px}aside h1 b{color:var(--gold)}
+.nav{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;color:var(--dim);padding:9px 12px;border-radius:9px;cursor:pointer;text-align:left;font-size:14px}
+.nav:hover{background:#1a1e26}.nav.on{background:#20252f;color:var(--text)}
+.badge{margin-left:auto;min-width:20px;padding:0 6px;border-radius:10px;background:var(--gold);color:#000;font-size:12px;line-height:20px;text-align:center;font-weight:600}
+aside .foot{margin-top:auto;color:var(--dim);font-size:12px;padding:0 8px;word-break:break-all}
+main{flex:1;overflow:auto;padding:26px 32px 80px}
+.wrap{max-width:1400px;margin:0 auto}
+h2{font-size:20px;margin:0 0 4px}h3{font-size:15px;margin:0 0 10px}.sub{color:var(--dim);margin:0 0 22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.dim{color:var(--dim);font-size:13px}.grid{display:grid;gap:14px}
+.btn{border:1px solid var(--line);background:var(--card2);color:var(--text);padding:7px 14px;border-radius:9px;cursor:pointer;font-size:13px;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:#3b4250}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.pri{background:var(--gold);color:#111;border-color:var(--gold);font-weight:600}.btn.bad{color:var(--bad)}.btn.sm{padding:4px 10px;font-size:12px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-block;padding:1px 9px;border-radius:20px;font-size:12px;background:#232833;color:var(--dim)}
+.pill.me{background:#3a3112;color:var(--gold)}.pill.ok{background:#123326;color:var(--ok)}.pill.bad{background:#3a1717;color:var(--bad)}.pill.ai{background:#14263b;color:var(--blue)}
+/* 首页步骤 */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;position:relative}
+.step .no{width:26px;height:26px;border-radius:50%;background:#232833;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;margin-bottom:8px}
+.step.cur{border-color:var(--gold)}.step.cur .no{background:var(--gold);color:#000}
+.step b{display:block;font-size:15px;margin-bottom:4px}.step .n{font-size:22px;font-weight:700;margin-top:8px}
+.todo-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.todo-row:last-child{border:0}
+.todo-row .t{flex:1;min-width:0}.todo-row .t div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.folders{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.folder{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.folder .ic{font-size:26px;line-height:1}.folder b{font-size:15px}.folder .cnt{color:var(--gold);font-weight:600}
+/* 看板 */
+.board{display:grid;grid-template-columns:repeat(6,minmax(160px,1fr));gap:10px;overflow-x:auto;padding-bottom:10px;align-items:start}
+.board.one{grid-template-columns:minmax(200px,320px)}
+.col{background:var(--side);border:1px solid var(--line);border-radius:14px;padding:10px}
+.col h4{margin:2px 4px 10px;font-size:13px;display:flex;align-items:center;gap:6px}.col h4 .c{color:var(--dim);font-weight:400}
+.vc{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 11px;margin-bottom:8px;cursor:pointer;position:relative}
+.vc:hover{border-color:#3b4250}.vc.me{border-left:3px solid var(--gold)}.vc .tt{font-weight:600;font-size:13px;line-height:1.45;margin-bottom:6px;padding-right:22px}
+.vc .ck{position:absolute;right:8px;top:9px;width:16px;height:16px;accent-color:var(--gold)}
+.vc .meta{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.empty{color:var(--dim);text-align:center;padding:16px 6px;font-size:13px}
+.bulk{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#1f242d;border:1px solid var(--gold);border-radius:12px;padding:10px 16px;display:none;gap:10px;align-items:center;z-index:20;box-shadow:0 8px 30px #0008}
+/* 详情抽屉 */
+#mask{position:fixed;inset:0;background:#0009;display:none;z-index:30}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(760px,96vw);background:var(--bg);border-left:1px solid var(--line);z-index:31;transform:translateX(100%);transition:transform .2s;overflow:auto;padding:22px 26px 60px}
+#drawer.open{transform:none}
+.dh{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px}.dh h2{flex:1;font-size:18px}
+.next{background:var(--card);border:1px solid var(--gold);border-radius:14px;padding:16px;margin-bottom:16px}.next.ai{border-color:#2a4466}
+.next .lead{font-weight:700;margin-bottom:10px;font-size:15px}
+video{width:100%;background:#000;border-radius:10px;max-height:430px}.v916{max-width:300px}
+.covers{display:flex;gap:12px;flex-wrap:wrap}.cov{text-align:center;cursor:pointer}.cov img{height:210px;border-radius:10px;border:3px solid transparent;display:block}
+.cov.sel img{border-color:var(--gold)}.cov .dim{margin-top:4px}
+label.f{display:block;font-size:13px;color:var(--dim);margin:12px 0 5px}
+input,textarea{width:100%;background:#0b0d11;border:1px solid var(--line);color:var(--text);border-radius:9px;padding:8px 11px;font:inherit}textarea{min-height:72px;resize:vertical}
+input:focus,textarea:focus{outline:none;border-color:var(--gold)}
+.cand{display:flex;gap:8px;align-items:center;margin:4px 0;font-size:13px}.cand .txt{flex:1}
+details{margin-top:10px}summary{cursor:pointer;color:var(--dim);font-size:13px}
+.md{white-space:pre-wrap;font-size:13.5px;line-height:1.7;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;max-height:70vh;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--dim);font-weight:500}
+/* 弹窗 / 提示 */
+#modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:50}
+#modal .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(460px,92vw)}
+#modal h3{font-size:17px}#modal .btns{justify-content:flex-end;margin-top:18px}
+#toast{position:fixed;right:22px;bottom:22px;max-width:440px;background:#1f242d;border:1px solid var(--line);padding:12px 16px;border-radius:12px;display:none;white-space:pre-wrap;z-index:60;font-size:13px}
+.help{background:#14202e;border:1px solid #23405e;border-radius:12px;padding:12px 14px;font-size:13px;color:#b9cde3;margin-bottom:16px}
+</style>
+</head>
+<body>
+<aside>
+  <h1>视频剪辑 SOP <b>工作台</b></h1>
+  <button class="nav" data-p="home">🏠 首页</button>
+  <button class="nav" data-p="videos">🎬 我的视频<span class="badge" id="b-videos" style="display:none"></span></button>
+  <button class="nav" data-p="sources">🎙 录像与复盘</button>
+  <button class="nav" data-p="data">📊 数据</button>
+  <button class="nav" data-p="folders">📁 文件夹</button>
+  <div class="foot"><div id="proj"></div><button class="btn sm" style="margin-top:8px" onclick="load(true)">刷新</button></div>
+</aside>
+<main><div class="wrap" id="main"><div class="empty">加载中…</div></div></main>
+<div id="mask" onclick="closeDrawer()"></div>
+<div id="drawer"></div>
+<div class="bulk" id="bulk"></div>
+<div id="modal"><div class="box" id="mbox"></div></div>
+<div id="toast"></div>
+<script>
+let S=null,page=location.hash.slice(1)||"home",openId=null,picked=new Set(),coverSel={},dirty={};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const file=p=>"/file?path="+encodeURIComponent(p);
+const hm=t=>(t||"").slice(5,16).replace("T"," ");
+const fmt=(v,pct)=>v==null?"–":pct?(v*100).toFixed(2)+"%":v>=10000?(v/10000).toFixed(2)+"万":Math.round(v);
+function toast(t,ok=true){const e=$("#toast");e.textContent=t;e.style.borderColor=ok?"var(--ok)":"var(--bad)";e.style.display="block";clearTimeout(e._t);e._t=setTimeout(()=>e.style.display="none",ok?2600:7000)}
+function modal(title,body,okText,onOk,danger){$("#mbox").innerHTML=`<h3>${esc(title)}</h3><div class="dim" style="font-size:14px;line-height:1.8">${body}</div><div class="btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn ${danger?"bad":"pri"}" id="mok">${esc(okText)}</button></div>`;$("#modal").style.display="flex";$("#mok").onclick=()=>{closeModal();onOk()}}
+function closeModal(){$("#modal").style.display="none"}
+async function load(manual){try{const r=await fetch("/api/state");S=await r.json();if(S.错误)throw new Error(S.错误);render();if(openId)renderDrawer();if(manual)toast("已刷新")}catch(e){$("#main").innerHTML=`<div class="card">读取失败:${esc(e.message)}</div>`}}
+async function act(body,msg){const r=await fetch("/api/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json();if(j.成功){toast("✅ "+(msg||"已完成"))}else toast("❌ "+(j.输出||j.错误||"失败"),false);if(body.动作!=="打开")await load();return j.成功}
+const openFolder=k=>act({动作:"打开",文件夹:k},"已在访达打开");
+const reveal=p=>act({动作:"打开",路径:p},"已在访达打开");
+
+/* ---------- 把切片和发布合成"一条视频"并判断它在哪一步 ---------- */
+function videos(){return S.切片.map(k=>{const p=S.发布.find(x=>x.clip_id===k.clip_id);return {k,p,st:stage(k,p)}})}
+function stage(k,p){
+  const S_=(col,label,who,key)=>({col,label,who,key});
+  if(k.状态==="候选")return S_("pick","等你挑:要不要剪","me","pick");
+  if(k.状态==="放弃")return S_("off","不剪了","","off");
+  if(k.状态==="需人工")return S_("cut","需要你看一下","me","help");
+  if(k.状态==="待剪")return S_("cut","排队等 AI 剪","ai","cutting");
+  if(k.状态==="剪辑中")return S_("cut","AI 剪辑中","ai","cutting");
+  if(k.状态==="已剪辑")return S_("review","等你看成片","me","review");
+  if(!p)return S_("copy","AI 写标题文案中","ai","copy");
+  const v=p.封面竖文件,h=p.封面横文件;
+  if(p.状态==="草稿"){if(!v)return (k.封面候选||[]).length?S_("copy","等你选封面","me","cover"):S_("copy","AI 做封面候选中","ai","copy");
+    if(!h)return S_("copy","AI 按你选的出横版","ai","copy");return S_("auth","等你确认发布","me","auth")}
+  if(p.状态==="待发布")return S_("pub","已授权,AI 设定时中","ai","queued");
+  if(p.状态==="已定时")return S_("pub","已定时 "+hm(p.发布时间),"ok","sched");
+  if(p.状态==="已发布")return S_("pub","已发布","ok","done");
+  if(p.状态==="已废弃")return S_("off","决定不发","","off");
+  if(p.状态==="需人工")return S_("auth","需要你看一下","me","help");
+  return S_("pub",p.状态,"","");
+}
+const COLS=[["pick","① 挑片段"],["cut","② 剪辑"],["review","③ 看成片"],["copy","④ 封面与文案"],["auth","⑤ 确认发布"],["pub","⑥ 已排期/已发布"]];
+const mine=()=>videos().filter(v=>v.st.who==="me");
+
+/* ---------- 渲染 ---------- */
+function render(){
+  document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("on",b.dataset.p===page));
+  const n=mine().length;const b=$("#b-videos");b.style.display=n?"":"none";b.textContent=n;
+  $("#proj").textContent="项目:"+S.项目路径;
+  $("#main").innerHTML=({home,videosPage,sources,data,folders})[page==="videos"?"videosPage":page]();
+  renderBulk();
+}
+function go(p){page=p;location.hash=p;render();$("main").scrollTop=0}
+document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>go(b.dataset.p));
+
+function home(){
+  const vs=videos(),me=mine(),ai=vs.filter(v=>v.st.who==="ai");
+  const inbox=S.文件夹.find(f=>f.键==="待加工");const sched=vs.filter(v=>["sched","done","queued"].includes(v.st.key)).length;
+  const cur=me.length?3:ai.length||S.素材.some(s=>s.状态!=="已复盘")?2:inbox.数量?2:sched?4:1;
+  const step=(no,title,desc,n,btn)=>`<div class="step ${cur===no?"cur":""}"><div class="no">${no}</div><b>${title}</b><div class="dim">${desc}</div><div class="n">${n}</div>${btn||""}</div>`;
+  let h=`<h2>你好 👋</h2><p class="sub">这个工作台帮你把长录像(课程、直播、访谈……)变成竖屏短视频,定时发到抖音,再看数据。你只需要在 ③ 这一步拍板,其余 AI 来做。</p>
+  <div class="steps">
+   ${step(1,"放入录像","把录像放进「待加工」文件夹",`${inbox.数量} 个待处理`,`<button class="btn sm" style="margin-top:8px" onclick="openFolder('待加工')">📂 打开待加工文件夹</button>`)}
+   ${step(2,"AI 整理与剪辑","转文字、写复盘、挑片段、剪成片、做封面",`${ai.length} 件进行中`)}
+   ${step(3,"你来把关","挑片段 → 看成片 → 选封面 → 确认发布",`${me.length} 件等你`,me.length?`<button class="btn sm pri" style="margin-top:8px" onclick="go('videos')">去处理</button>`:"")}
+   ${step(4,"定时发布与数据","只定时,不会立即发;发布后自动看数据",`${sched} 条已排期/已发布`,`<button class="btn sm" style="margin-top:8px" onclick="openFolder('成片')">📂 打开成片文件夹</button>`)}
+  </div>
+  <div class="grid" style="grid-template-columns:3fr 2fr;margin-top:18px">
+   <div class="card"><h3>👤 现在需要你做的(${me.length})</h3>
+    ${me.length?me.map(v=>`<div class="todo-row"><span class="pill me">${esc(v.st.label)}</span><div class="t"><div><b>${esc(v.k.标题)}</b></div></div><button class="btn sm pri" onclick="openVideo('${v.k.clip_id}')">处理</button></div>`).join(""):
+     `<div class="empty">现在没有要你做的事。<br>${inbox.数量?"AI 会自动处理「待加工」里的录像。":"把录像放进「待加工」文件夹就能开始。"}</div>`}</div>
+   <div class="card"><h3>🤖 AI 正在做(${ai.length})</h3>
+    ${ai.length?ai.map(v=>`<div class="todo-row"><span class="pill ai">${esc(v.st.label)}</span><div class="t"><div>${esc(v.k.标题)}</div></div></div>`).join(""):'<div class="empty">AI 暂时空闲</div>'}
+    <div class="dim" style="margin-top:10px">${S.配置.自动执行?"自动执行已开启:有活就自动让 AI 干。":"自动执行未开启:AI 不会自己开工,需要你让 AI 执行(或在配置里打开自动执行)。"}</div></div>
+  </div>
+  <h3 style="margin-top:8px">📁 你的文件夹 <span class="dim">点按钮直接在访达里打开</span></h3>
+  <div class="grid folders">${S.文件夹.map(folderCard).join("")}</div>`;
+  return h}
+function folderCard(f){const ic={待加工:"📥",成片:"🎬",参考封面:"🖼",参考视频:"🎞",学习:"🧠"}[f.键]||"📁";
+  return `<div class="folder"><div class="ic">${ic}</div><b>${esc(f.名称)} <span class="cnt">${f.数量}</span></b><div class="dim">${esc(f.说明)}</div>
+   ${f.示例.length?`<div class="dim" style="font-size:12px">最近:${f.示例.map(esc).join("、")}</div>`:""}<div style="margin-top:auto;padding-top:6px"><button class="btn sm" onclick="openFolder('${f.键}')">📂 在访达打开</button></div></div>`}
+function folders(){return `<h2>文件夹</h2><p class="sub">所有东西都在项目文件夹里:<span style="color:var(--text)">${esc(S.项目路径)}</span></p><div class="grid folders">${S.文件夹.map(folderCard).join("")}</div>
+  <div class="help" style="margin-top:16px">放录像:直接把视频文件拖进「待加工」。处理完原片会挪到「待加工/已处理」,不会删除。<br>剪好的视频:在「成片」里,每条视频一个文件夹(视频、字幕、文案、封面都在里面)。</div>`}
+
+function videosPage(){
+  const vs=videos();if(!vs.length)return `<h2>我的视频</h2><p class="sub">还没有视频。</p><div class="card empty">把录像放进「待加工」,AI 复盘后会在这里列出可以剪的片段。<br><br><button class="btn pri" onclick="openFolder('待加工')">📂 打开待加工文件夹</button></div>`;
+  const off=vs.filter(v=>v.st.col==="off");
+  return `<h2>我的视频</h2><p class="sub">每张卡片是一条视频,按进度从左到右排。<b style="color:var(--gold)">金色边</b>的等你处理,点卡片看详情。第①列可以勾选后批量决定。</p>
+  <div class="board">${COLS.map(([c,name])=>{const it=vs.filter(v=>v.st.col===c);return `<div class="col"><h4>${name} <span class="c">${it.length}</span></h4>${it.length?it.map(card).join(""):'<div class="empty">空</div>'}</div>`}).join("")}</div>
+  ${off.length?`<details><summary>不做了的(${off.length})</summary><div class="board one" style="margin-top:10px"><div class="col">${off.map(card).join("")}</div></div></details>`:""}`}
+function card(v){const k=v.k,pick=v.st.key==="pick";const dur=v.k.成片时长_秒?Math.round(v.k.成片时长_秒)+" 秒":Math.round((k.预览.止||0)-(k.预览.起||0))+" 秒片段";
+  return `<div class="vc ${v.st.who==="me"?"me":""}" onclick="openVideo('${k.clip_id}')">${pick?`<input type="checkbox" class="ck" ${picked.has(k.clip_id)?"checked":""} onclick="event.stopPropagation();togglePick('${k.clip_id}',this.checked)">`:""}
+   <div class="tt">${esc(k.标题)}</div><div class="meta"><span class="pill ${v.st.who}">${esc(v.st.label)}</span><span class="dim" style="font-size:11px">${dur}</span></div></div>`}
+function togglePick(id,on){on?picked.add(id):picked.delete(id);renderBulk()}
+function renderBulk(){const b=$("#bulk");if(page!=="videos"||!picked.size){b.style.display="none";return}
+  b.style.display="flex";b.innerHTML=`<span>已选 <b>${picked.size}</b> 个片段</span><button class="btn pri" onclick="bulk('待剪')">✂️ 剪这些</button><button class="btn" onclick="bulk('放弃')">不剪</button><button class="btn" onclick="picked.clear();render()">取消选择</button>`}
+async function bulk(st){const ids=[...picked];if(await act({动作:"批量切片状态",ids,状态:st},st==="待剪"?`已交给 AI 剪 ${ids.length} 条`:`已标记不剪 ${ids.length} 条`)){picked.clear();render()}}
+
+function sources(){
+  if(!S.素材.length)return `<h2>录像与复盘</h2><p class="sub">还没有录像。</p><div class="card empty"><button class="btn pri" onclick="openFolder('待加工')">📂 打开待加工文件夹放录像</button></div>`;
+  return `<h2>录像与复盘</h2><p class="sub">每场录像 AI 会写一份复盘,并从里面挑出可以剪的片段。</p>`+S.素材.map(s=>{const n=S.切片.filter(k=>k.source_id===s.source_id).length;
+   return `<div class="card"><div class="btns" style="justify-content:space-between"><div><h3 style="margin:0">${esc(s.标题||s.source_id)}</h3><div class="dim">${esc(s.来源)} · ${esc(s.日期)} ${s.评分?"· "+esc(s.评分):""} · 挑出 ${n} 个片段</div></div>
+    <div class="btns">${s.文件.文档.map(p=>`<button class="btn sm" onclick="openDoc('${esc(p)}')">📄 ${esc(p.split("/").pop().replace(".md",""))}</button>`).join("")||'<span class="dim">复盘还没写好</span>'}
+    ${s.文件.视频[0]?`<button class="btn sm" onclick="reveal('${esc(s.文件.视频[0])}')">📂 原片位置</button>`:""}</div></div>
+    ${s.摘要?`<p style="margin:10px 0 0">${esc(s.摘要)}</p>`:""}</div>`}).join("")}
+
+function data(){
+  const ps=S.发布.filter(p=>["已定时","已发布"].includes(p.状态));const tiers=["24h","72h","7d"];
+  const n=new Set(S.发布.filter(p=>p.数据["72h"]||p.数据["7d"]).map(p=>p.publish_id)).size;
+  return `<h2>数据</h2><p class="sub">发布后 AI 会在 24 小时、72 小时、7 天各看一次数据。至少 5 条作品满 72 小时,才会给出改进建议。</p>
+  <div class="card"><h3>作品</h3>${ps.length?`<table><tr><th>作品</th><th>状态</th>${tiers.map(t=>`<th>${t} 播放</th><th>${t} 完播</th>`).join("")}<th>点赞</th><th>涨粉</th></tr>
+   ${ps.map(p=>{const last=p.数据["7d"]||p.数据["72h"]||p.数据["24h"]||{};return `<tr><td>${p.作品链接?`<a href="${esc(p.作品链接)}" target="_blank">${esc(p.标题)}</a>`:esc(p.标题)}</td><td><span class="pill ${p.状态==="已发布"?"ok":"ai"}">${p.状态==="已定时"?"定时 "+hm(p.发布时间):"已发布"}</span></td>
+    ${tiers.map(t=>`<td>${fmt(p.数据[t]?.播放)}</td><td>${fmt(p.数据[t]?.完播率,1)}</td>`).join("")}<td>${fmt(last.点赞)}</td><td>${fmt(last.涨粉)}</td></tr>`}).join("")}</table>`:'<div class="empty">还没有发布的作品</div>'}</div>
+  <div class="card"><h3>哪种做法效果更好</h3>${n<5?`<div class="help">现在满 72 小时的作品有 ${n} 条,不到 5 条,先不下结论。</div>`:""}
+   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${Object.entries(S.分组).map(([dim,rs])=>`<div><b>${esc(dim)}</b>${rs.length?`<table><tr><th>分组</th><th>条</th><th>播放</th><th>完播</th></tr>${rs.map(r=>`<tr><td>${esc(r.分组)}</td><td>${r.条数}</td><td>${fmt(r.平均播放)}</td><td>${fmt(r.平均完播率,1)}</td></tr>`).join("")}</table>`:'<div class="dim">暂无</div>'}</div>`).join("")}</div></div>`}
+
+/* ---------- 视频详情(右侧抽屉) ---------- */
+function openVideo(id){openId=id;renderDrawer();$("#drawer").classList.add("open");$("#mask").style.display="block"}
+function closeDrawer(){if(Object.values(dirty).some(Boolean)&&!confirm("文案改了还没保存,确定关闭?"))return;dirty={};openId=null;$("#drawer").classList.remove("open");$("#mask").style.display="none";$("#drawer").innerHTML=""}
+async function openDoc(p){const t=await (await fetch(file(p))).text();openId=null;$("#drawer").innerHTML=`<div class="dh"><h2>${esc(p.split("/").pop())}</h2><button class="btn" onclick="reveal('${esc(p)}')">📂 在访达显示</button><button class="btn" onclick="closeDrawer()">关闭</button></div><div class="md">${esc(t)}</div>`;$("#drawer").classList.add("open");$("#mask").style.display="block"}
+function renderDrawer(){
+  const v=videos().find(x=>x.k.clip_id===openId);if(!v){closeDrawer();return}
+  const {k,p,st}=v;const folder=k.本地文件夹||k.成片;
+  $("#drawer").innerHTML=`<div class="dh"><div style="flex:1"><h2>${esc(k.标题)}</h2><div class="dim">${esc(k.clip_id)} · <span class="pill ${st.who}">${esc(st.label)}</span></div></div>
+   ${folder?`<button class="btn" title="打开这条视频的文件夹" onclick="reveal('${esc(folder)}')">📂 文件夹</button>`:""}<button class="btn" onclick="closeDrawer()">关闭</button></div>
+   ${nextBox(v)}
+   <details><summary>片段信息</summary><div style="margin-top:8px"><div class="dim">原片 ${esc(k.起始)}–${esc(k.结束)} · ${esc(k.选题类型||"")} / ${esc(k.钩子类型||"")} · 优先级 ${esc(k.优先级||"-")}</div>
+    ${k.开头钩子?`<p>开头钩子:${esc(k.开头钩子)}</p>`:""}${k.概要?`<p>${esc(k.概要)}</p>`:""}${k.理由?`<p class="dim">为什么选它:${esc(k.理由)}</p>`:""}</div></details>
+   ${k.备注?`<details><summary>处理记录</summary><div class="md" style="margin-top:8px;max-height:260px">${esc(k.备注)}</div></details>`:""}`;
+  const vid=$("#drawer video[data-s]");if(vid){const s=+vid.dataset.s,e=+vid.dataset.e;vid.addEventListener("loadedmetadata",()=>vid.currentTime=s);vid.addEventListener("timeupdate",()=>{if(e&&vid.currentTime>e)vid.pause()})}
+}
+function nextBox(v){const {k,p,st}=v;const id=k.clip_id;
+  const ai=t=>`<div class="next ai"><div class="lead">🤖 ${t}</div><div class="dim">这一步 AI 来做,你不用管。做完会回到这里等你。</div></div>`;
+  switch(st.key){
+  case "pick":return `<div class="next"><div class="lead">要不要把这段剪成短视频?</div>
+    ${k.预览.文件?`<video controls preload="metadata" data-s="${k.预览.起||0}" data-e="${k.预览.止||0}" src="${file(k.预览.文件)}"></video><div class="dim">只播这一段(${esc(k.起始)}–${esc(k.结束)}),到结尾自动停。</div>`:'<div class="dim">找不到原片,没法预览。</div>'}
+    <div class="btns" style="margin-top:12px"><button class="btn pri" onclick="act({动作:'切片状态',id:'${id}',状态:'待剪'},'已交给 AI 剪')">✂️ 剪这段</button><button class="btn" onclick="act({动作:'切片状态',id:'${id}',状态:'放弃'},'已标记不剪')">不剪</button></div></div>`;
+  case "cutting":return ai("AI 会把这段剪成 60–90 秒的竖屏视频(加标题栏、金句卡、字幕)")+(k.状态==="待剪"?`<div class="btns"><button class="btn sm" onclick="act({动作:'切片状态',id:'${id}',状态:'候选'},'已撤回')">撤回,先不剪</button></div>`:"");
+  case "review":return `<div class="next"><div class="lead">看一下成片,能发吗?</div>
+    ${k.成片?`<div class="v916"><video id="rv" controls preload="metadata" src="${file(k.成片)}"></video></div>`:'<div class="dim">找不到成片文件</div>'}
+    <div class="btns" style="margin-top:12px"><button class="btn pri" onclick="act({动作:'看片',id:'${id}',结论:'通过'},'通过了,AI 接着写文案、做封面')">✅ 通过</button></div>
+    <label class="f">不满意?写下哪里不对,AI 会重剪(已重剪 ${k.重剪次数||0} 次,满 3 次转人工)</label>
+    <textarea id="why" placeholder="例如:00:23 字幕错字;结尾太突然"></textarea>
+    <div class="btns" style="margin-top:8px"><button class="btn sm" onclick="stamp()">⏱ 插入当前播放时间</button><button class="btn bad" onclick="reject('${id}')">打回重剪</button></div></div>`;
+  case "copy":return ai(st.label);
+  case "cover":return `<div class="next"><div class="lead">选一张你喜欢的封面</div><div class="dim" style="margin-bottom:10px">点图片选中,再点「用这张」。AI 会按它再做一张横版。</div>
+    <div class="covers">${k.封面候选.map(c=>`<div class="cov ${coverSel[id]===c?"sel":""}" onclick="coverSel['${id}']=this.dataset.c;renderDrawer()" data-c="${esc(c)}"><img src="${file(c)}"><div class="dim">${esc(c.split("/").pop().replace(/\.\w+$/,"").replace(/^[a-z]_/,""))}</div></div>`).join("")}</div>
+    <div class="btns" style="margin-top:12px"><button class="btn pri" ${coverSel[id]?"":"disabled"} onclick="act({动作:'选封面',id:'${p.publish_id}',文件:coverSel['${id}']},'已选好,AI 会出横版')">用这张</button></div></div>`;
+  case "auth":return `<div class="next"><div class="lead">确认文案和封面,没问题就发布</div>${copyForm(p)}
+    <label class="f">封面</label><div class="covers">${p.封面竖文件?`<div class="cov"><img src="${file(p.封面竖文件)}"><div class="dim">竖版 3:4</div></div>`:""}${p.封面横文件?`<div class="cov"><img src="${file(p.封面横文件)}"><div class="dim">横版 4:3</div></div>`:""}</div>
+    ${k.成片?`<details><summary>再看一眼成片</summary><div class="v916" style="margin-top:8px"><video controls preload="none" src="${file(k.成片)}"></video></div></details>`:""}
+    <div class="btns" style="margin-top:14px"><button class="btn pri" onclick="authorize('${p.publish_id}')">🚀 确认发布(定时)</button><button class="btn bad" onclick="discard('${p.publish_id}')">这条不发了</button></div></div>`;
+  case "queued":return ai("已授权,AI 会排到最近的发布时间并在平台上设好定时")+`<div class="btns"><button class="btn sm" onclick="act({动作:'发布状态',id:'${p.publish_id}',状态:'草稿'},'已撤回授权')">撤回授权</button></div>`;
+  case "sched":case "done":{const d=p.数据,tiers=["24h","72h","7d"];
+    return `<div class="next ai"><div class="lead">${st.key==="sched"?"⏰ 已定时,"+hm(p.发布时间)+" 自动发布":"✅ 已发布"}</div>
+     ${p.作品链接?`<div><a href="${esc(p.作品链接)}" target="_blank">打开作品页面 ↗</a></div>`:'<div class="dim">发布后 AI 会回填作品链接。</div>'}
+     <table style="margin-top:10px"><tr><th></th>${tiers.map(t=>`<th>${t}</th>`).join("")}</tr>${[["播放"],["完播率",1],["点赞"],["评论"],["收藏"],["转发"],["涨粉"]].map(([m,pc])=>`<tr><td>${m}</td>${tiers.map(t=>`<td>${fmt(d[t]?.[m],pc)}</td>`).join("")}</tr>`).join("")}</table>
+     <div class="dim" style="margin-top:6px">标题:${esc(p.标题)}</div></div>`}
+  case "help":return `<div class="next" style="border-color:var(--bad)"><div class="lead">⚠️ 需要你看一下</div><div class="dim" style="white-space:pre-wrap">${esc((p&&p.状态==="需人工"?p.备注:k.备注)||"").slice(-500)}</div>
+    <div class="dim" style="margin-top:8px">看完原因后,告诉 AI 怎么处理,或在下面选:</div><div class="btns" style="margin-top:8px">${k.状态==="需人工"?`<button class="btn" onclick="act({动作:'切片状态',id:'${id}',状态:'待剪'},'已交回 AI 重剪')">让 AI 重剪</button><button class="btn" onclick="act({动作:'切片状态',id:'${id}',状态:'放弃'})">不剪了</button>`:`<button class="btn" onclick="act({动作:'发布状态',id:'${p.publish_id}',状态:'草稿'})">退回草稿</button>`}</div></div>`;
+  default:return `<div class="next ai"><div class="lead">${esc(st.label)}</div></div>`}}
+function copyForm(p){const id=p.publish_id;const titles=p.候选标题列表.map(t=>String(t).split("|"));
+  return `<label class="f">标题 <span id="dirty-${id}" style="color:var(--gold);display:${dirty[id]?"inline":"none"}">· 未保存</span></label>
+   <input id="t-${id}" value="${esc(p.标题)}" oninput="markDirty('${id}')">
+   ${titles.length?`<div style="margin-top:6px">${titles.map(([n,f,t])=>`<div class="cand"><span class="pill ${n===p.推荐?"me":""}">${n===p.推荐?"推荐":esc(f)}</span><span class="txt">${esc(t)}</span><button class="btn sm" onclick="document.getElementById('t-${id}').value=this.dataset.t;markDirty('${id}')" data-t="${esc(t)}">用这个</button></div>`).join("")}</div>`:""}
+   <label class="f">简介</label><textarea id="d-${id}" oninput="markDirty('${id}')">${esc(p.简介)}</textarea>
+   <label class="f">话题</label><input id="g-${id}" value="${esc(p.标签)}" oninput="markDirty('${id}')">
+   <div class="btns" style="margin-top:8px"><button class="btn sm" id="save-${id}" ${dirty[id]?"":"disabled"} onclick="saveCopy('${id}')">保存修改</button></div>`}
+function markDirty(id){dirty[id]=true;$("#dirty-"+CSS.escape(id)).style.display="inline";$("#save-"+CSS.escape(id)).disabled=false}
+async function saveCopy(id){const g=x=>document.getElementById(x+"-"+id).value;const f={标题:g("t"),简介:g("d"),标签:g("g")};dirty[id]=false;if(!await act({动作:"改文案",id,字段:f},"文案已保存")){dirty[id]=true;renderDrawer()}}
+function stamp(){const v=$("#rv"),t=$("#why");if(!v)return;const s=Math.floor(v.currentTime);t.value+=(t.value?"\n":"")+String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")+" ";t.focus()}
+function reject(id){const r=$("#why").value.trim();if(!r){toast("打回要写清楚哪里不对",false);$("#why").focus();return}act({动作:"看片",id,结论:"打回",原因:r},"已打回,AI 会按你的意见重剪")}
+function authorize(id){if(dirty[id]){toast("文案改了还没保存,先点「保存修改」",false);return}const p=S.发布.find(x=>x.publish_id===id);
+  modal("确认发布这条视频?",`平台:<b style="color:var(--text)">${esc(p.平台)}</b><br>标题:<b style="color:var(--text)">${esc(p.标题)}</b><br><br>AI 会把它排到最近空着的发布时间(${esc((S.配置.发布排期||{}).时间点||"")}),在平台上设成<b style="color:var(--gold)">定时发布</b>,不会立即发出。定时前你还可以在这里撤回。`,"确认发布",()=>act({动作:"发布状态",id,状态:"待发布"},"已确认,AI 会去设定时发布"))}
+function discard(id){modal("这条不发了?","视频文件都会保留,以后想发可以再改回来。","不发了",()=>act({动作:"发布状态",id,状态:"已废弃"},"已标记不发"),true)}
+addEventListener("keydown",e=>{if(e.key==="Escape"){if($("#modal").style.display==="flex")closeModal();else if($("#drawer").classList.contains("open"))closeDrawer()}});
+addEventListener("hashchange",()=>{page=location.hash.slice(1)||"home";render()});
+/* 只在你没在操作时悄悄刷新:抽屉/弹窗打开、勾选中、页面在后台时都不刷新 */
+setInterval(()=>{if(document.hidden||openId||$("#drawer").classList.contains("open")||picked.size||$("#modal").style.display==="flex")return;load()},20000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!openId)load()});
+load();
+</script>
+</body>
+</html>

@@ -20,8 +20,9 @@ print("== A 文件与配置")
 need = ["AGENTS.md", "CLAUDE.md", "README.md", "配置模板.json", "启动问卷.md", "1-流程/业务流程.md",
         *[f"2-标准/{n}.md" for n in ("选题标准", "剪辑标准", "文案标准", "封面标准", "复盘标准", "平台规则", "标准修改规则")],
         *[f"3-工具/环节/{n}.md" for n in ("0-整理", "1-复盘选片", "2-剪辑", "3-看片", "4-文案", "5-封面", "6-发布", "7-数据复盘")],
-        "3-工具/db.py", "3-工具/watch.py", "3-工具/脚本/organize_day.py", "3-工具/脚本/transcribe.sh",
-        "3-工具/脚本/compact.py", "3-工具/脚本/segs.py", "3-工具/脚本/make_covers.py", "3-工具/模板/cover_prompt.md"]
+        "3-工具/db.py", "3-工具/watch.py", "3-工具/脚本/intake.py", "3-工具/check_env.py", "3-工具/脚本/transcribe.sh",
+        "3-工具/脚本/compact.py", "3-工具/脚本/segs.py", "3-工具/脚本/make_covers.py", "3-工具/模板/cover_prompt.md",
+        "3-工具/工作台/server.py", "3-工具/工作台/index.html", "3-工具/脚本/autorun.sh"]
 miss = [f for f in need if not (ROOT / f).exists()]
 check("A1 必需文件齐全", not miss, "缺:" + ",".join(miss) if miss else f"{len(need)} 个")
 cfgp = ROOT / "配置.json"
@@ -39,6 +40,10 @@ check("A5 流程层和标准层不含工具名(换工具不用改)", not leak, "
 print("\n== B 数据库一致性(只读)")
 sys.path.insert(0, str(ROOT / "3-工具"))
 import db  # noqa: E402
+if not db.DB.exists():
+    check("B0 数据库已建好", False, "先运行 python3 3-工具/db.py init(或 check_env.py --fix),再重新自检")
+    print("\n数据库还没建,后面的检查跳过。")
+    sys.exit(1)
 c = sqlite3.connect(f"file:{db.DB}?mode=ro", uri=True)
 q = lambda s, *a: c.execute(s, a).fetchall()
 have = [r[1] for r in q("pragma table_info(clips)")]
@@ -125,7 +130,17 @@ pub = {"clip_id": T, "publishes": [{"平台": "抖音", "标题": "模拟标题"
 expect("写发布草稿", ["add-pub", j("p.json", pub)])
 P = T + "@抖音"
 check("C 草稿 → 不再出现在文案待办,出现在 5-封面", not in_next("4-文案", T) and in_next("5-封面", P))
-expect("登记封面", ["update", "pub", P, "封面竖=/tmp/a.jpg", "封面横=/tmp/b.jpg", "--by", "AI"])
+# 封面三步:无候选 → 5-封面;有候选未选 → 人工-选封面;已选竖缺横 → 5-封面;竖横齐 → 人工-审核发布
+cover_home = tmpd / "成片模拟"
+(cover_home / "封面" / "候选").mkdir(parents=True)
+expect("设定切片本地文件夹(绝对路径)", ["update", "clip", T, f"本地文件夹={cover_home}", "--by", "AI"])
+check("C 无候选图 → 出现在 5-封面", in_next("5-封面", P) and not in_next("人工-选封面", P))
+(cover_home / "封面" / "候选" / "x.png").write_bytes(b"")
+check("C 有候选未选 → 出现在'人工-选封面'", in_next("人工-选封面", P) and not in_next("5-封面", P))
+v_pick = str(cover_home / "封面" / "候选" / "x.png")
+expect("用户选定竖封面", ["update", "pub", P, f"封面竖={v_pick}", "--by", "人工"])
+check("C 已选竖缺横 → 又出现在 5-封面", in_next("5-封面", P) and not in_next("人工-选封面", P) and not in_next("人工-审核发布", P))
+expect("登记横版封面", ["update", "pub", P, "封面横=/tmp/b.jpg", "包装标准版本=v2", "--by", "AI"])
 check("C 封面齐 → 出现在'人工-审核发布',发布环节不拾取", in_next("人工-审核发布", P) and not in_next("6-发布", P))
 expect("AI 不能代替用户授权发布(草稿→待发布 被拒)", ["set", "pub", P, "待发布", "--by", "AI"], ok=False, contains="人工关卡")
 expect("用户授权:草稿→待发布", ["set", "pub", P, "待发布", "--by", "人工"])
@@ -160,31 +175,14 @@ s.close()
 check("C 每次修改都留了记录(events)", n >= 20, f"{n} 条")
 shutil.rmtree(tmpd)
 
-print("\n== D 本机环境(按配置)")
-H = pathlib.Path.home()
-which = lambda x: shutil.which(x) or (str(H / ".local/bin" / x) if (H / ".local/bin" / x).exists() else None)
-for t in ("ffmpeg", "ffprobe"):
-    check(f"D {t}", bool(which(t)))
-if cfg.get("转写方式") == "本机转写":
-    check("D 本机转写 mlx_whisper", bool(which("mlx_whisper")))
-drv = cfg.get("驱动命令", "").split(" ")[0]
-check(f"D 驱动命令可执行({drv or '未设置'})", bool(drv and which(drv)), level="⚠️" if not drv else "❌")
-if tool == "ChatCut":
-    check("D ChatCut 应用已安装", pathlib.Path("/Applications/ChatCut.app").exists())
-    if drv == "claude":
-        try:
-            ok = "chatcut_desktop" in (H / ".claude.json").read_text()
-        except Exception:
-            ok = False
-        check("D Claude Code 已接入 ChatCut 工具接口", ok)
-if cfg.get("封面风格"):
-    check("D 生图工具 codex", bool(which("codex")), level="⚠️")
-    check("D 后备封面脚本所需 uv", bool(which("uv")), level="⚠️")
-for k in ("原始录像目录", "成片目录"):
-    p = pathlib.Path(cfg.get(k, "")).expanduser()
-    check(f"D {k} 存在且可写", p.is_dir() and os.access(p, os.W_OK), str(p))
-check("D 未验证项(需真实运行一次):ChatCut 是否已登录可调用、生图是否可用、平台是否已登录", False,
-      "这些只能真实跑一条切片才能确认", level="⚠️")
+print("\n== D 本机环境(详见 python3 3-工具/check_env.py)")
+r = subprocess.run([sys.executable, str(ROOT / "3-工具" / "check_env.py"), "--json"], capture_output=True, text=True)
+try:
+    for it in json.loads(r.stdout):
+        check(f"D {it['分组']}:{it['项目']}", it["通过"],
+              "" if it["通过"] else f"[{it['谁来']}] {it['处理']}", level=it["级别"] if it["级别"] != "✅" else "❌")
+except Exception as e:
+    check("D 运行 check_env.py", False, str(e))
 
 fails = [r for r in res if not r[1] and r[2] == "❌"]
 warns = [r for r in res if not r[1] and r[2] == "⚠️"]

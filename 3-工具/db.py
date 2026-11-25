@@ -22,14 +22,19 @@
   python3 3-工具/db.py set source <ID> <新状态> --by AI|人工 [--note "..."]
   python3 3-工具/db.py update clip|pub|source <ID> 字段=值 [字段=值 ...] --by AI|人工
   python3 3-工具/db.py review <切片ID> 通过|打回 --by 人工 [--reason "..."] [--reviewer 名字]
+
+AI 代审:配置.json 的 "AI代审" 里某个关卡(挑选/看片/选封面/确认发布)被用户打开时,
+AI 可以用 --by AI代审 代替用户做这个关卡;没打开时一律拒绝。每次代审都记入 events。
   python3 3-工具/db.py plan-slots                    给"待发布"的记录排定时时间(只读,不写库)
 """
 import argparse, json, pathlib, sqlite3, sys
 from datetime import datetime, timedelta, timezone
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-CFG = json.loads((ROOT / "配置.json").read_text()) if (ROOT / "配置.json").exists() else \
-    json.loads((ROOT / "配置模板.json").read_text())
+import os
+_CFG_FILE = os.environ.get("SOP_CFG")            # 自检用:临时配置文件
+_CFG_FILE = pathlib.Path(_CFG_FILE) if _CFG_FILE else (ROOT / "配置.json" if (ROOT / "配置.json").exists() else ROOT / "配置模板.json")
+CFG = json.loads(_CFG_FILE.read_text())
 import os
 DB = pathlib.Path(os.environ["SOP_DB"]) if os.environ.get("SOP_DB") else ROOT / CFG.get("数据库位置", "data/sop.db")
 TZ = timezone(timedelta(hours=8))
@@ -43,6 +48,24 @@ def folder(key, default):
     """配置里的文件夹:相对路径按项目根目录算,支持 ~。"""
     p = pathlib.Path(os.path.expanduser(CFG.get(key, default)))
     return p if p.is_absolute() else ROOT / p
+
+GATES = ("挑选", "看片", "选封面", "确认发布")
+
+
+def gate_on(g):
+    return bool((CFG.get("AI代审") or {}).get(g))
+
+
+def gate_of(kind, old, new):
+    """这次流转属于哪个可代审的关卡;None 表示只能人工(如撤回、从需人工恢复)。"""
+    if kind == "clip" and old == "候选" and new in ("待剪", "放弃"):
+        return "挑选"
+    if kind == "clip" and old == "已剪辑" and new in ("已通过", "待剪"):
+        return "看片"
+    if kind == "pub" and old == "草稿" and new in ("待发布", "已废弃"):
+        return "确认发布"
+    return None
+
 
 # ---------------- 状态机 ----------------
 # 每个状态 -> 允许转到的状态。标 * 的流转是人工关卡,只能 --by 人工。
@@ -237,12 +260,17 @@ def pending(c):
                 files.append(f.name)
     add("0-整理", "AI", files, "待加工文件夹里有已录完、未整理的录像")
     add("1-复盘选片", "AI", q("select source_id from sources where 状态='已整理'"), "素材已整理,待转写、复盘、挑候选切片")
-    add("人工-挑选", "人工", q("select clip_id from clips where 状态='候选'"), "候选切片等你挑:要剪的改'待剪'")
+    gate = lambda g, human, ai: (("AI", ai) if gate_on(g) else ("人工", human))
+    w, n = gate("挑选", "人工-挑选", "代审-挑选")
+    add(n, w, q("select clip_id from clips where 状态='候选'"),
+        "AI 代审已开:AI 按选题标准替你挑" if w == "AI" else "候选切片等你挑:要剪的改'待剪'")
     stale = (t - timedelta(hours=3)).isoformat()
     add("2-剪辑", "AI", q("select clip_id from clips where 状态='待剪'") +
         q("select clip_id from clips where 状态='剪辑中' and coalesce(更新时间,'')<?", stale),
         "待剪的切片(含中断超过 3 小时的'剪辑中')")
-    add("3-看片", "人工", q("select clip_id from clips where 状态='已剪辑'"), "成片等看片人看:通过 / 打回")
+    w, n = gate("看片", "3-看片", "代审-看片")
+    add(n, w, q("select clip_id from clips where 状态='已剪辑'"),
+        "AI 代审已开:AI 按剪辑标准替你看片" if w == "AI" else "成片等看片人看:通过 / 打回")
     miss = []
     for cid in q("select clip_id from clips where 状态='已通过'"):
         have = set(q("select 平台 from publishes where clip_id=?", cid))
@@ -264,8 +292,10 @@ def pending(c):
         else:
             ready.append(r["publish_id"])
     add("5-封面", "AI", need_cand + need_h, "草稿还没有封面候选,或已选定竖封面、还缺横版")
-    add("人工-选封面", "人工", need_pick, "封面候选已出,等你选一张(工作台「封面与发布」)")
-    add("人工-审核发布", "人工", ready, "草稿已齐(文案+竖横封面),等你审核:要发的改'待发布'")
+    w, n = gate("选封面", "人工-选封面", "代审-选封面")
+    add(n, w, need_pick, "AI 代审已开:AI 替你从候选里选一张" if w == "AI" else "封面候选已出,等你选一张(工作台「封面与发布」)")
+    w, n = gate("确认发布", "人工-审核发布", "代审-发布")
+    add(n, w, ready, "AI 代审已开:AI 检查后直接授权定时发布" if w == "AI" else "草稿已齐(文案+竖横封面),等你审核:要发的改'待发布'")
     add("6-发布", "AI", q(f"select publish_id from publishes where 状态='待发布' and 平台 in ({ph})", *platforms),
         "已授权,待设定时发布")
     due_fill, due_metric = [], []
@@ -334,8 +364,8 @@ def cmd_list(a):
 
 
 def check_by(by):
-    if by not in ("AI", "人工"):
-        die("--by 只能是 AI 或 人工")
+    if by not in ("AI", "人工", "AI代审"):
+        die("--by 只能是 AI、人工 或 AI代审")
 
 
 def transition(c, kind, oid, new, by, note=""):
@@ -351,7 +381,12 @@ def transition(c, kind, oid, new, by, note=""):
     if new not in plain:
         die(f"{oid}:不允许从'{old}'改到'{new}'。允许:" + "、".join(sorted(s.rstrip('*') + ('(仅人工)' if s.endswith('*') else '') for s in allowed)))
     if (new + "*") in allowed and by != "人工":
-        die(f"{oid}:'{old}'→'{new}'是人工关卡,只能由人工执行(--by 人工)。AI 不得代替用户执行。")
+        g = gate_of(kind, old, new)
+        if not (by == "AI代审" and g and gate_on(g)):
+            hint = f"(用户可在工作台打开「AI 代审·{g}」)" if g else ""
+            die(f"{oid}:'{old}'→'{new}'是人工关卡,只能由人工执行(--by 人工)。AI 不得代替用户执行。{hint}")
+    if by == "AI代审" and not ((new + "*") in allowed):
+        by = "AI"
     extra = {}
     if kind == "clip" and new == "已剪辑":
         lo, hi = CFG.get("成片时长", [60, 90])
@@ -410,8 +445,9 @@ def cmd_update(a):
 
 
 def cmd_review(a):
-    if a.by != "人工":
-        die("看片是人工关卡,只能 --by 人工。AI 不得代替看片人做结论。")
+    if a.by != "人工" and not (a.by == "AI代审" and gate_on("看片")):
+        die("看片是人工关卡,只能 --by 人工。AI 不得代替看片人做结论。(用户可在工作台打开「AI 代审·看片」)")
+    who = a.by
     c = conn()
     r = row(c, "clip", a.id)
     if r["状态"] != "已剪辑":
@@ -421,7 +457,7 @@ def cmd_review(a):
         d = r["成片时长_秒"]
         if d is None or not (lo <= float(d) <= hi):
             die(f"{a.id} 成片时长 {d} 秒不在 {lo}–{hi} 秒内,按规则不能通过,请打回重剪")
-        transition(c, "clip", a.id, "已通过", "人工", a.reason or "")
+        transition(c, "clip", a.id, "已通过", who, a.reason or "")
     else:
         if not a.reason:
             die("打回必须写原因:--reason '哪个时间点、什么问题'")
@@ -430,11 +466,11 @@ def cmd_review(a):
         if n >= MAX_REDO:
             c.execute("update clips set 状态='需人工', 更新时间=?, 备注=? where clip_id=?",
                       (now(), append_note(r["备注"], f"看片打回:{a.reason};累计重剪 {n} 次,按规则转需人工"), a.id))
-            log(c, "clip", a.id, "看片打回", "已剪辑", "需人工", "人工", a.reason)
+            log(c, "clip", a.id, "看片打回", "已剪辑", "需人工", who, a.reason)
         else:
-            transition(c, "clip", a.id, "待剪", "人工", "看片打回:" + a.reason)
+            transition(c, "clip", a.id, "待剪", who, "看片打回:" + a.reason)
     c.execute("update clips set 看片结论=?, 打回原因=?, 看片人=?, 看片时间=? where clip_id=?",
-              (a.result, a.reason if a.result == "打回" else None, a.reviewer or "老师", now(), a.id))
+              (a.result, a.reason if a.result == "打回" else None, a.reviewer or ("AI代审" if who == "AI代审" else "用户"), now(), a.id))
     c.commit()
     print(f"✅ {a.id} 看片{a.result}" + (f",当前状态:{c.execute('select 状态 from clips where clip_id=?', (a.id,)).fetchone()[0]}"))
 

@@ -9,6 +9,9 @@
 set -e
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:$PATH"
 cd "${0:A:h}/../.."
+# 配置里填了代理就带上(后台定时任务不会继承终端里的代理设置)
+PROXY="$(python3 -I -c "import json;print(json.load(open('配置.json')).get('代理',''))" 2>/dev/null || true)"
+if [ -n "$PROXY" ]; then export HTTPS_PROXY=$PROXY HTTP_PROXY=$PROXY ALL_PROXY=$PROXY; fi
 DIRS=()
 while IFS= read -r d; do [ -d "$d" ] && DIRS+=(--add-dir "$d"); done < <(python3 -I - <<'PY'
 import json, os, sqlite3, pathlib

@@ -24,7 +24,7 @@ LABEL_WB="com.videoclipsop.${HASH}.workbench"
 PLIST_WATCH="${AGENTS_DIR}/${LABEL_WATCH}.plist"
 PLIST_WB="${AGENTS_DIR}/${LABEL_WB}.plist"
 
-PATH_VAL="${HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+PATH_VAL="${HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 PYTHON3="$(command -v python3 || true)"
 if [[ -z "$PYTHON3" ]]; then
   echo "找不到 python3,请先装好系统 Python。" >&2

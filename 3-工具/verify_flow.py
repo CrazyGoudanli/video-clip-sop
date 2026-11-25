@@ -173,6 +173,29 @@ s = sqlite3.connect(sim)
 n = s.execute("select count(*) from events where 对象ID like '%20990101%'").fetchone()[0]
 s.close()
 check("C 每次修改都留了记录(events)", n >= 20, f"{n} 条")
+# AI 代审:开关关着时 AI 代审被拒;打开后才放行,并记为 AI代审
+s = sqlite3.connect(sim)
+s.execute("insert into clips (clip_id,来源,source_id,状态,重剪次数) values ('课-20990101-03','课程','课-20990101','候选',0)")
+s.commit(); s.close()
+gcfg = tmpd / "cfg.json"
+base = json.loads((ROOT / ("配置.json" if (ROOT / "配置.json").exists() else "配置模板.json")).read_text())
+gcfg.write_text(json.dumps({**base, "AI代审": {"挑选": False}}, ensure_ascii=False))
+env["SOP_CFG"] = str(gcfg)
+expect("代审开关关着:AI代审 挑选 → 被拒绝", ["set", "clip", "课-20990101-03", "待剪", "--by", "AI代审"], ok=False)
+check("C 代审开关关着 → 待办仍是'人工-挑选'", in_next("人工-挑选", "课-20990101-03"))
+gcfg.write_text(json.dumps({**base, "AI代审": {"挑选": True}}, ensure_ascii=False))
+check("C 代审开关打开 → 待办变成'代审-挑选'(AI)", in_next("代审-挑选", "课-20990101-03") and not in_next("人工-挑选", "课-20990101-03"))
+expect("代审开关打开:AI代审 挑选 → 放行", ["set", "clip", "课-20990101-03", "待剪", "--by", "AI代审"])
+s = sqlite3.connect(sim)
+s.execute("insert into publishes (publish_id,clip_id,来源,平台,状态) values ('课-20990101-03@测试','课-20990101-03','课程','抖音','草稿')")
+s.commit(); s.close()
+expect("只开了挑选:AI代审 确认发布 → 仍被拒绝", ["set", "pub", "课-20990101-03@测试", "待发布", "--by", "AI代审"], ok=False,
+       contains="人工关卡")
+s = sqlite3.connect(sim)
+who = s.execute("select 操作者 from events where 对象ID='课-20990101-03' order by id desc limit 1").fetchone()[0]
+s.close()
+check("C 代审的操作记为'AI代审'", who == "AI代审", who)
+env.pop("SOP_CFG")
 shutil.rmtree(tmpd)
 
 print("\n== D 本机环境(详见 python3 3-工具/check_env.py)")

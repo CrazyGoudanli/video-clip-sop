@@ -18,7 +18,7 @@
   - 不转码重压,不删除任何原片
 只用 Python 标准库 + ffprobe/ffmpeg。
 """
-import argparse, json, os, re, subprocess, sys, time
+import argparse, json, os, re, shutil, subprocess, sys, time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -97,7 +97,10 @@ def start_time(p, info):
 def busy(p):
     if time.time() - p.stat().st_mtime < QUIET_SECONDS:
         return "10 分钟内仍有写入,可能还在录制"
-    r = subprocess.run(["lsof", "--", str(p)], capture_output=True, text=True)
+    lsof = shutil.which("lsof") or ("/usr/sbin/lsof" if os.path.exists("/usr/sbin/lsof") else None)
+    if not lsof:                     # 找不到 lsof 就只靠"10 分钟没写入"判断
+        return None
+    r = subprocess.run([lsof, "--", str(p)], capture_output=True, text=True)
     if r.returncode == 0 and r.stdout.strip():
         return "被程序占用,可能还在录制或复制"
     return None

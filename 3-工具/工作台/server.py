@@ -126,7 +126,8 @@ def state():
                               f"where 时间档 in ('72h','7d') group by 1 order by 平均播放 desc")
     c.close()
     return {"文件夹": folder_info(), "项目路径": str(ROOT), "待办": todo, "素材": sources, "切片": clips, "发布": pubs, "最近操作": events, "分组": groups,
-            "配置": {k: db.CFG.get(k) for k in ("发布平台", "成片时长", "驱动AI", "自动执行", "封面图形风格", "发布排期")}}
+            "配置": {k: db.CFG.get(k) for k in ("发布平台", "成片时长", "驱动AI", "剪辑工具", "自动执行", "封面图形风格", "发布排期", "AI代审")},
+            "可选设置": settings_options(), "自动处理": auto_status()}
 
 
 # ---------------- 写:只通过 db.py ----------------
@@ -146,6 +147,12 @@ def action(a):
     kind, oid = a.get("动作"), a.get("id", "")
     if kind == "打开":
         return open_path(a)
+    if kind == "设置":
+        return change_setting(a)
+    if kind == "代审":
+        return set_gate(a)
+    if kind == "自动处理":
+        return set_auto(bool(a.get("开启")))
     if kind == "批量切片状态":
         ids = [i for i in (a.get("ids") or []) if ID_RE.match(i)]
         if a.get("状态") not in CLIP_STATES or not ids:
@@ -188,6 +195,97 @@ def action(a):
     if kind == "打开":
         return open_path(a)
     return False, "未知动作"
+
+
+# 左下角设置:只允许改这几项,值只能从列表里选
+SETTINGS = {
+    "驱动AI": {"Claude Code": {"驱动命令": "zsh 3-工具/脚本/run_claude.sh {prompt}"},
+               "Codex": {"驱动命令": "zsh 3-工具/脚本/run_codex.sh {prompt}"}},
+    "剪辑工具": {"ChatCut": {}, "ffmpeg": {}},
+}
+
+
+def settings_options():
+    import shutil
+    os.environ["PATH"] = os.pathsep.join([str(Path.home() / ".local/bin"), "/opt/homebrew/bin", os.environ.get("PATH", "")])
+    have = {"Claude Code": bool(shutil.which("claude")), "Codex": bool(shutil.which("codex")),
+            "ChatCut": Path("/Applications/ChatCut.app").exists(), "ffmpeg": bool(shutil.which("ffmpeg"))}
+    note = {"Claude Code": "推荐", "Codex": "", "ChatCut": "有标题栏、金句卡等动效包装", "ffmpeg": "免费,只做基础剪辑和字幕"}
+    return {k: [{"值": v, "已安装": have.get(v, True), "说明": note.get(v, "")} for v in opts] for k, opts in SETTINGS.items()}
+
+
+def change_setting(a):
+    key, val = a.get("项"), a.get("值")
+    if key not in SETTINGS or val not in SETTINGS[key]:
+        return False, "不支持的设置"
+    cfg_path = ROOT / "配置.json"
+    if not cfg_path.exists():
+        return False, "还没有 配置.json,先让 AI 按启动问卷生成"
+    cfg = json.loads(cfg_path.read_text())
+    old = cfg.get(key)
+    cfg[key] = val
+    cfg.update(SETTINGS[key][val])
+    cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=1) + "\n")
+    db.CFG.clear()
+    db.CFG.update(cfg)
+    extra = "(只对之后新剪的视频生效)" if key == "剪辑工具" else "(下次启动 AI 时生效)"
+    return True, f"{key}:{old} → {val} {extra}"
+
+
+AUTORUN = ROOT / "3-工具" / "脚本" / "autorun.sh"
+
+
+def auto_status():
+    """自动处理开关的实际状态:配置里的 自动执行 + 定时检查任务是否在跑;以及 AI 此刻在不在干活。"""
+    r = subprocess.run(["zsh", str(AUTORUN), "status"], capture_output=True, text=True, timeout=20)
+    m = re.search(r"监测:\s*(\S+)\s*/\s*(\S+)", r.stdout)
+    running_task = m and m[2] == "在跑"
+    lock = ROOT / "data" / ".watch.lock"
+    busy = lock.read_text().split(" ")[0] if lock.exists() else ""
+    logs = sorted((ROOT / "data" / "运行日志").glob("*.log"), key=lambda p: p.stat().st_mtime) if (ROOT / "data" / "运行日志").is_dir() else []
+    last = [p for p in logs if p.name != "autorun.log"]
+    return {"开启": bool(db.CFG.get("自动执行")) and bool(running_task), "配置": bool(db.CFG.get("自动执行")),
+            "定时任务": bool(running_task), "间隔秒": db.CFG.get("监测间隔秒", 300), "正在做": busy,
+            "最近一次": last[-1].name if last else ""}
+
+
+def set_auto(on):
+    cfg_path = ROOT / "配置.json"
+    if not cfg_path.exists():
+        return False, "还没有 配置.json,先让 AI 按启动问卷生成"
+    cfg = json.loads(cfg_path.read_text())
+    if on and not cfg.get("驱动命令"):
+        return False, "还没设置驱动 AI,先在左下角选一个"
+    r = subprocess.run(["zsh", str(AUTORUN), "install" if on else "uninstall"], capture_output=True, text=True, timeout=60)
+    if r.returncode != 0:
+        return False, (r.stdout + r.stderr).strip()[-400:]
+    cfg["自动执行"] = bool(on)
+    cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=1) + "\n")
+    db.CFG.clear()
+    db.CFG.update(cfg)
+    return True, ("自动处理已开启:每 %s 秒检查一次,有活就让 AI 接着做" % cfg.get("监测间隔秒", 300)) if on else "自动处理已关闭"
+
+
+def set_gate(a):
+    g, on = a.get("关卡"), bool(a.get("开启"))
+    if g not in db.GATES:
+        return False, "未知关卡"
+    cfg_path = ROOT / "配置.json"
+    if not cfg_path.exists():
+        return False, "还没有 配置.json"
+    cfg = json.loads(cfg_path.read_text())
+    gates = {k: False for k in db.GATES}
+    gates.update(cfg.get("AI代审") or {})
+    gates[g] = on
+    cfg["AI代审"] = gates
+    cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=1) + "\n")
+    db.CFG.clear()
+    db.CFG.update(cfg)
+    c = db.conn()
+    db.log(c, "config", "AI代审", f"{'打开' if on else '关闭'} {g}", None, str(on), "人工", "工作台")
+    c.commit()
+    c.close()
+    return True, f"AI 代审·{g} 已{'打开:之后这一步由 AI 替你决定' if on else '关闭:这一步回到由你决定'}"
 
 
 def open_path(a):

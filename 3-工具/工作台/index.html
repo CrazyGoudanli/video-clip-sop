@@ -9,12 +9,17 @@
 *{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,"PingFang SC","Helvetica Neue",sans-serif;display:flex}
 a{color:var(--blue);cursor:pointer}button{font:inherit}
 /* 侧栏 */
-aside{width:210px;flex:none;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 12px}
+aside{width:230px;flex:none;overflow-y:auto;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 12px}
 aside h1{font-size:16px;margin:0 8px 22px}aside h1 b{color:var(--gold)}
 .nav{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;color:var(--dim);padding:9px 12px;border-radius:9px;cursor:pointer;text-align:left;font-size:14px}
 .nav:hover{background:#1a1e26}.nav.on{background:#20252f;color:var(--text)}
 .badge{margin-left:auto;min-width:20px;padding:0 6px;border-radius:10px;background:var(--gold);color:#000;font-size:12px;line-height:20px;text-align:center;font-weight:600}
 aside .foot{margin-top:auto;color:var(--dim);font-size:12px;padding:0 8px;word-break:break-all}
+.set{margin-bottom:10px}.set label{display:block;margin-bottom:4px}.set select{width:100%;background:#0b0d11;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px}
+.set .hint{font-size:11px;margin-top:3px}
+.auto{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.sw{position:relative;width:36px;height:20px;flex:none;border-radius:10px;background:#333a46;cursor:pointer;border:0;transition:background .15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}.sw.on{background:var(--ok)}.sw.on::after{left:18px}
 main{flex:1;overflow:auto;padding:26px 32px 80px}
 .wrap{max-width:1400px;margin:0 auto}
 h2{font-size:20px;margin:0 0 4px}h3{font-size:15px;margin:0 0 10px}.sub{color:var(--dim);margin:0 0 22px}
@@ -81,7 +86,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:7px 8px;b
   <button class="nav" data-p="sources">🎙 录像与复盘</button>
   <button class="nav" data-p="data">📊 数据</button>
   <button class="nav" data-p="folders">📁 文件夹</button>
-  <div class="foot"><div id="proj"></div><button class="btn sm" style="margin-top:8px" onclick="load(true)">刷新</button></div>
+  <div class="foot"><div id="auto"></div><div id="gates"></div><div id="settings"></div><div id="proj" style="margin-top:12px"></div><button class="btn sm" style="margin-top:8px" onclick="load(true)">刷新</button></div>
 </aside>
 <main><div class="wrap" id="main"><div class="empty">加载中…</div></div></main>
 <div id="mask" onclick="closeDrawer()"></div>
@@ -106,7 +111,9 @@ const reveal=p=>act({动作:"打开",路径:p},"已在访达打开");
 
 /* ---------- 把切片和发布合成"一条视频"并判断它在哪一步 ---------- */
 function videos(){return S.切片.map(k=>{const p=S.发布.find(x=>x.clip_id===k.clip_id);return {k,p,st:stage(k,p)}})}
-function stage(k,p){
+function stage(k,p){const r=stage0(k,p);const map={pick:"挑选",review:"看片",cover:"选封面",auth:"确认发布"};
+  if(r.who==="me"&&map[r.key]&&(S.配置.AI代审||{})[map[r.key]])return {...r,label:"AI 代审中("+r.label.replace("等你","")+")",who:"ai"};return r}
+function stage0(k,p){
   const S_=(col,label,who,key)=>({col,label,who,key});
   if(k.状态==="候选")return S_("pick","等你挑:要不要剪","me","pick");
   if(k.状态==="放弃")return S_("off","不剪了","","off");
@@ -132,10 +139,41 @@ const mine=()=>videos().filter(v=>v.st.who==="me");
 function render(){
   document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("on",b.dataset.p===page));
   const n=mine().length;const b=$("#b-videos");b.style.display=n?"":"none";b.textContent=n;
-  $("#proj").textContent="项目:"+S.项目路径;
+  $("#proj").textContent="项目:"+S.项目路径;renderSettings();
   $("#main").innerHTML=({home,videosPage,sources,data,folders})[page==="videos"?"videosPage":page]();
   renderBulk();
 }
+function renderAuto(){const a=S.自动处理||{};const busy=a.正在做?`<div class="hint" style="color:var(--blue)">AI 正在做:${esc(a.正在做)}</div>`:"";
+  const half=a.配置!==a.定时任务?`<div class="hint" style="color:var(--bad)">状态不一致,请关掉再打开一次</div>`:"";
+  $("#auto").innerHTML=`<div class="auto"><button class="sw ${a.开启?"on":""}" onclick="toggleAuto(${!a.开启})" title="自动处理"></button><div><div style="color:var(--text);font-size:13px">自动处理</div>
+   <div class="hint">${a.开启?`已开启 · 每 ${Math.round((a.间隔秒||300)/60)} 分钟看一次`:"已关闭 · AI 不会自己开工"}</div>${busy}${half}</div></div>`}
+function toggleAuto(on){if(on)modal("打开自动处理?",`打开后,这台电脑会每隔几分钟检查一次:有 AI 能做的事(整理录像、复盘、剪辑、做封面、定时发布、看数据)就自动启动 AI 去做,一次做一步。<br><br>挑片段、看片、选封面、确认发布这些<b style="color:var(--gold)">仍然要你来点</b>,AI 不会替你决定。电脑要保持开机、不合盖休眠。`,"打开",()=>act({动作:"自动处理",开启:true},"自动处理已开启"));
+  else modal("关闭自动处理?","关闭后 AI 不会自己开工;正在做的那一步会做完。","关闭",()=>act({动作:"自动处理",开启:false},"自动处理已关闭"),true)}
+let gatesOpen=false;
+const GATE_INFO={
+  挑选:{t:"挑片段",w:"AI 会按选题标准,每场录像替你挑最多 3 条去剪,其余标为不剪。你不再看到候选列表。"},
+  看片:{t:"看成片",w:"AI 会替你判断成片能不能发:检查时长、版式、字幕错字。它看不出语气、节奏、事实对不对。画面里有其他人时会交还给你。"},
+  选封面:{t:"选封面",w:"AI 会替你从三张候选里选一张封面,你不再看到候选。"},
+  确认发布:{t:"确认发布",w:"AI 检查文案红线后,会<b>直接授权把视频发到你的公开账号</b>(仍然只定时,不立即发)。<br>发出去的内容代表你本人:措辞不当、泄露他人信息、平台违规,后果都由账号承担。<br>建议只在前面几步都跑顺、并且你会在定时前回看的情况下打开。"}};
+function renderGates(){const g=S.配置.AI代审||{};const on=Object.entries(GATE_INFO).filter(([k])=>g[k]).length;
+  $("#gates").innerHTML=`<details class="set" ${on||gatesOpen?"open":""} ontoggle="gatesOpen=this.open"><summary style="color:${on?"var(--bad)":"var(--dim)"}">AI 代审${on?` · 已开 ${on} 项`:""}</summary>
+   <div class="dim" style="font-size:11px;margin:4px 0 6px">打开后,这一步不等你,由 AI 替你决定</div>
+   ${Object.entries(GATE_INFO).map(([k,v])=>`<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><button class="sw ${g[k]?"on":""}" style="${g[k]?"background:var(--bad)":""}" onclick="toggleGate('${k}',${!g[k]})"></button><span style="color:${g[k]?"var(--bad)":"var(--text)"};font-size:13px">${v.t}</span></div>`).join("")}</details>`}
+function toggleGate(k,on){const v=GATE_INFO[k];
+  if(!on){act({动作:"代审",关卡:k,开启:false},"已关闭,这一步回到由你决定");return}
+  $("#mbox").innerHTML=`<h3 style="color:var(--bad)">⚠️ 打开「AI 代审·${v.t}」?</h3><div class="dim" style="font-size:14px;line-height:1.8">${v.w}<br><br>打开后,这一步<b style="color:var(--text)">不再等你确认</b>。每次 AI 代你做的决定都会记录为「AI代审」,随时可以关掉。</div>
+   <label style="display:flex;gap:8px;align-items:center;margin-top:14px;font-size:13px"><input type="checkbox" id="gack" style="width:auto"> 我明白风险,由我承担 AI 代审的结果</label>
+   <div class="btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn bad" id="mok" disabled>仍然打开</button></div>`;
+  $("#modal").style.display="flex";$("#gack").onchange=e=>$("#mok").disabled=!e.target.checked;
+  $("#mok").onclick=()=>{closeModal();act({动作:"代审",关卡:k,开启:true},`AI 代审·${v.t} 已打开`)}}
+function renderSettings(){renderAuto();renderGates();const o=S.可选设置||{};const cur={驱动AI:S.配置.驱动AI,剪辑工具:S.配置.剪辑工具};
+  const lab={驱动AI:"驱动 AI(谁来干活)",剪辑工具:"剪辑工具"};
+  $("#settings").innerHTML=Object.entries(o).map(([k,opts])=>{const c=opts.find(x=>x.值===cur[k])||{};
+   return `<div class="set"><label>${lab[k]||k}</label><select onchange="changeSetting('${k}',this)">${opts.map(x=>`<option value="${esc(x.值)}" ${x.值===cur[k]?"selected":""}>${esc(x.值)}${x.已安装?"":"(未安装)"}</option>`).join("")}</select>
+   ${c.已安装===false?`<div class="hint" style="color:var(--bad)">这台电脑还没装 ${esc(c.值)},让 AI 运行环境检查帮你装</div>`:c.说明?`<div class="hint">${esc(c.说明)}</div>`:""}</div>`}).join("")}
+function changeSetting(k,sel){const v=sel.value,old=S.配置[k];const opt=(S.可选设置[k]||[]).find(x=>x.值===v)||{};
+  const warn=opt.已安装?"":`<br><span style="color:var(--bad)">注意:这台电脑还没装 ${esc(v)},切换后 AI 会用不了,需要先装好。</span>`;
+  sel.value=old;modal(`把${k}换成 ${v}?`,(k==="剪辑工具"?"只对之后新剪的视频生效,已经剪好的不受影响。":"下次启动 AI 时生效,正在进行的那一步不受影响。")+warn,"确认更换",()=>act({动作:"设置",项:k,值:v},"已更换"))}
 function go(p){page=p;location.hash=p;render();$("main").scrollTop=0}
 document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>go(b.dataset.p));
 
@@ -157,7 +195,7 @@ function home(){
      `<div class="empty">现在没有要你做的事。<br>${inbox.数量?"AI 会自动处理「待加工」里的录像。":"把录像放进「待加工」文件夹就能开始。"}</div>`}</div>
    <div class="card"><h3>🤖 AI 正在做(${ai.length})</h3>
     ${ai.length?ai.map(v=>`<div class="todo-row"><span class="pill ai">${esc(v.st.label)}</span><div class="t"><div>${esc(v.k.标题)}</div></div></div>`).join(""):'<div class="empty">AI 暂时空闲</div>'}
-    <div class="dim" style="margin-top:10px">${S.配置.自动执行?"自动执行已开启:有活就自动让 AI 干。":"自动执行未开启:AI 不会自己开工,需要你让 AI 执行(或在配置里打开自动执行)。"}</div></div>
+    <div class="dim" style="margin-top:10px">${S.自动处理&&S.自动处理.开启?"自动处理已开启:有活 AI 会自己接着做。":"自动处理未开启:AI 不会自己开工。打开左下角的「自动处理」开关,或者跟 AI 说一声。"}</div></div>
   </div>
   <h3 style="margin-top:8px">📁 你的文件夹 <span class="dim">点按钮直接在访达里打开</span></h3>
   <div class="grid folders">${S.文件夹.map(folderCard).join("")}</div>`;

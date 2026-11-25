@@ -28,7 +28,8 @@ STATE = ROOT / "data" / ".watch_state.json"
 LOCK = ROOT / "data" / ".watch.lock"
 TODO_MD = ROOT / "data" / "待办.md"
 LOGDIR = ROOT / "data" / "运行日志"
-ORDER = ["0-整理", "1-复盘选片", "2-剪辑", "4-文案", "5-封面", "6-发布", "7-数据复盘"]
+ORDER = ["0-整理", "1-复盘选片", "代审-挑选", "2-剪辑", "代审-看片", "4-文案", "5-封面", "代审-选封面", "代审-发布",
+         "6-发布", "7-数据复盘"]
 
 
 def stamp():
@@ -89,7 +90,7 @@ def end_line(logf):
 def prompt_for(stage, ids):
     return (f"你在执行项目「视频剪辑SOP」(当前目录)。先读 AGENTS.md,然后只执行一个环节:{stage}。"
             f"对象:{', '.join(ids[:20])}。按 3-工具/环节/{stage}.md 的步骤做,所有状态修改只用 3-工具/db.py。"
-            "人工关卡(挑选、看片、审核发布、同意改标准)绝不代做。最后一行按 AGENTS.md 的格式输出结束行。")
+            "人工关卡(挑选、看片、选封面、审核发布、同意改标准)绝不代做;只有环节名以「代审-」开头时,才按该环节文件代用户决定,并用 --by AI代审。最后一行按 AGENTS.md 的格式输出结束行。")
 
 
 def run_once(dry, force=False):

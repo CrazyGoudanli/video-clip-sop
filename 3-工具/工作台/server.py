@@ -11,7 +11,7 @@
   - 工作台里点的按钮,一律记为 --by 人工,备注"工作台"。
 只用 Python 标准库。
 """
-import argparse, json, mimetypes, os, re, sqlite3, subprocess, sys, threading, webbrowser
+import argparse, base64, json, mimetypes, os, re, shutil, sqlite3, subprocess, sys, threading, time, webbrowser
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote
@@ -72,6 +72,41 @@ def cover_candidates(folder):
     return sorted(str(p.relative_to(ROOT)) for p in d.iterdir() if p.suffix.lower() in IMG_EXT)
 
 
+def _cover_dir(folder, sub):
+    if not folder:
+        return None
+    d = ROOT / os.path.expanduser(folder) / "封面" / sub
+    try:
+        d.resolve().relative_to(ROOT.resolve())
+    except ValueError:
+        return None
+    return d
+
+
+def cover_refs(folder):
+    d = _cover_dir(folder, "参考")
+    return sorted(str(p.relative_to(ROOT)) for p in d.iterdir() if p.suffix.lower() in IMG_EXT) if d and d.is_dir() else []
+
+
+def cover_notes(folder):
+    d = _cover_dir(folder, "")
+    f = d / "要求.md" if d else None
+    return f.read_text()[-2000:] if f and f.exists() else ""
+
+
+def cover_progress(folder):
+    d = _cover_dir(folder, "")
+    f = d / "进度.txt" if d else None
+    if not f or not f.exists() or time.time() - f.stat().st_mtime > 3 * 3600:
+        return []
+    return [l.strip() for l in f.read_text(errors="ignore").splitlines() if l.strip()][:6]
+
+
+def cover_rounds(folder):
+    d = _cover_dir(folder, "历史")
+    return len([p for p in d.iterdir() if p.is_dir()]) if d and d.is_dir() else 0
+
+
 FOLDERS = [  # (键, 显示名, 相对路径, 说明)
     ("待加工", "待加工", "待加工", "把要处理的长录像放这里(课程、直播、访谈都行),AI 会自动整理"),
     ("成片", "成片", "成片", "剪好的视频:每条一个文件夹,里面有视频、字幕、文案、封面"),
@@ -93,12 +128,68 @@ def folder_info():
     return out
 
 
+def last_line(note):
+    ls = [l for l in (note or "").splitlines() if l.strip()]
+    return ls[-1] if ls else ""
+
+
+def before_help(c, kind, oid):
+    """'需人工'之前是什么状态(决定卡片留在哪一列、"重试"回到哪)。"""
+    r = c.execute("select 旧值 from events where 对象=? and 对象ID=? and 新值='需人工' and 动作 in ('改状态','看片打回') "
+                  "order by id desc limit 1", (kind, oid)).fetchone()
+    return r[0] if r else None
+
+
+def watch_state():
+    try:
+        st = json.loads((ROOT / "data" / ".watch_state.json").read_text())
+    except Exception:
+        return {}
+    out = {}
+    for stage, m in (st.get("失败时间") or {}).items():
+        m = m if isinstance(m, dict) else {"*": m}
+        for o, t in m.items():
+            if time.time() - t < 3600:
+                out.setdefault(o, {})["冷却"] = {"环节": stage, "重试时间": time.strftime("%H:%M", time.localtime(t + 3600))}
+    for o, r in (st.get("最近结果") or {}).items():
+        out.setdefault(o, {})["最近结果"] = {**r, "时间": time.strftime("%m-%d %H:%M", time.localtime(r.get("时间", 0)))}
+    return out
+
+
+def inbox_files():
+    """待加工根目录里还没整理的录像:录制/拷贝中、排队、整理中。"""
+    inbox = db.folder("待加工目录", "待加工")
+    lock = ROOT / "data" / ".watch.lock"
+    busy = []
+    if lock.exists():
+        try:
+            info = json.loads(lock.read_text().splitlines()[1])
+            if info.get("环节") == "0-整理":
+                busy = info.get("对象", [])
+        except (IndexError, ValueError):
+            pass
+    out = []
+    if inbox.is_dir():
+        for f in sorted(inbox.iterdir()):
+            if f.is_file() and not f.name.startswith(".") and f.suffix.lower() in VIDEO_EXT:
+                st = f.stat()
+                age = time.time() - st.st_mtime
+                out.append({"文件": f.name, "大小MB": round(st.st_size / 1e6), "状态": "整理中" if f.name in busy else
+                            ("还在写入" if age < 600 else "排队"), "可开始秒": max(0, int(600 - age))})
+    return out
+
+
 def state():
     c = db.conn()
     todo = db.pending(c)
+    ws = watch_state()
+    ov = db.overlaps(c)
     sources = rows(c, "select * from sources order by 日期 desc, source_id desc")
     for s in sources:
         s["文件"] = source_files(s["source_id"])
+        s["原因"] = last_line(s.get("备注"))
+        s["之前"] = before_help(c, "source", s["source_id"]) if s["状态"] == "需人工" else None
+        s["监测"] = ws.get(s["source_id"])
     clips = rows(c, "select * from clips order by source_id desc, clip_id")
     for k in clips:
         files = source_files(k["source_id"])["视频"]
@@ -107,6 +198,14 @@ def state():
         k["预览"] = {"文件": src, "起": secs(k["起始"]), "止": secs(k["结束"])}
         k["成片"] = rel(k.get("成片文件"))
         k["封面候选"] = cover_candidates(k.get("本地文件夹"))
+        k["封面参考"] = cover_refs(k.get("本地文件夹"))
+        k["封面要求"] = cover_notes(k.get("本地文件夹"))
+        k["封面重做"] = cover_rounds(k.get("本地文件夹"))
+        k["封面进度"] = cover_progress(k.get("本地文件夹"))
+        k["重叠"] = ov.get(k["clip_id"], [])
+        k["原因"] = last_line(k.get("备注"))
+        k["之前"] = before_help(c, "clip", k["clip_id"]) if k["状态"] == "需人工" else None
+        k["监测"] = ws.get(k["clip_id"])
     pubs = rows(c, "select * from publishes order by 更新时间 desc")
     met = {}
     for m in rows(c, "select * from metrics"):
@@ -118,16 +217,136 @@ def state():
         except ValueError:
             p["候选标题列表"] = []
         p["数据"] = met.get(p["publish_id"], {})
+        p["后台链接"] = p.get("后台链接") or db.ADMIN_URL.get(p["平台"])
+        p["登录链接"] = db.LOGIN_URL.get(p["平台"])
+        p["原因"] = last_line(p.get("备注"))
+        p["之前"] = before_help(c, "pub", p["publish_id"]) if p["状态"] == "需人工" else None
+        p["监测"] = ws.get(p["publish_id"])
     events = rows(c, "select * from events order by id desc limit 30")
     groups = {}
     for dim in ("标题句式", "封面类型", "选题类型", "钩子类型"):
         groups[dim] = rows(c, f"select coalesce({dim},'未标注') 分组, count(*) 条数, round(avg(播放)) 平均播放, "
                               f"round(avg(完播率),4) 平均完播率, round(avg(涨粉),1) 平均涨粉 from v_performance "
                               f"where 时间档 in ('72h','7d') group by 1 order by 平均播放 desc")
+    pref = prefs(c)
     c.close()
     return {"文件夹": folder_info(), "项目路径": str(ROOT), "待办": todo, "素材": sources, "切片": clips, "发布": pubs, "最近操作": events, "分组": groups,
-            "配置": {k: db.CFG.get(k) for k in ("发布平台", "成片时长", "驱动AI", "剪辑工具", "自动执行", "封面图形风格", "发布排期", "AI代审")},
+            "收件": inbox_files(), "偏好": pref,
+            "配置": {k: db.CFG.get(k) for k in ("发布平台", "成片时长", "驱动AI", "剪辑工具", "自动执行", "封面图形风格", "发布排期", "AI代审", "重剪上限")},
             "可选设置": settings_options(), "自动处理": auto_status()}
+
+
+# ---------------- 我的偏好 ----------------
+def prefs(c):
+    try:
+        ds = rows(c, "select * from decisions order by id desc limit 500")
+    except sqlite3.OperationalError:
+        ds = []
+    gates = {}
+    tags = {}
+    for d in ds:
+        g = gates.setdefault(d["关卡"], {"次数": 0, "采纳": 0, "否定": 0})
+        g["次数"] += 1
+        g["采纳"] += 1 if d["采纳"] else 0
+        g["否定"] += 1 if d["否定"] else 0
+        for t in (d["标签"] or "").replace(",", ",").split(","):
+            if t.strip():
+                tags.setdefault(d["关卡"], {}).setdefault(t.strip(), 0)
+                tags[d["关卡"]][t.strip()] += 1
+    # 挑片段:按选题类型/钩子类型/优先级看你选中的比例(只算已经挑过的)
+    pick = {}
+    for dim in ("选题类型", "钩子类型", "优先级"):
+        pick[dim] = rows(c, f"select coalesce({dim},'未标注') 分组, count(*) 条数, "
+                            f"sum(case when 状态 not in ('候选','放弃') then 1 else 0 end) 选中 "
+                            f"from clips where 状态!='候选' group by 1 order by 条数 desc")
+    hi = rows(c, "select count(*) n, sum(case when 状态 not in ('候选','放弃') then 1 else 0 end) y from clips "
+                 "where 状态!='候选' and 优先级='高'")[0]
+    props = []
+    for d in (ROOT / "学习" / "提案", ROOT / "data" / "数据复盘"):
+        if d.is_dir():
+            props += [str(p.relative_to(ROOT)) for p in sorted(d.glob("*.md"), key=lambda x: -x.stat().st_mtime)[:10]]
+    return {"关卡": gates, "标签": tags, "挑片": pick, "高优先级": hi, "最近": ds[:30], "提案": props,
+            "偏好文件": "学习/我的偏好.md" if (ROOT / "学习" / "我的偏好.md").exists() else None}
+
+
+PREF_MARK = "<!-- 以下是你自己写的偏好:工作台不会覆盖,AI 会一起读 -->"
+
+
+def write_pref_file():
+    """短期偏好:把最近的采纳/否定例子写进 学习/我的偏好.md,下一次 AI 生成时照着来。不改标准。"""
+    c = db.conn()
+    try:
+        ds = rows(c, "select * from decisions order by id desc limit 60")
+    except sqlite3.OperationalError:
+        ds = []
+    title = {r["clip_id"]: r["标题"] for r in rows(c, "select clip_id,标题 from clips")}
+    c.close()
+    f = ROOT / "学习" / "我的偏好.md"
+    f.parent.mkdir(exist_ok=True)
+    mine = f.read_text().split(PREF_MARK, 1)[1] if f.exists() and PREF_MARK in f.read_text() else "\n(在这里写,例如:不想露脸的片段别选;标题别用感叹号)\n"
+    name = lambda i: f"{i}《{title.get(i.split('@')[0], '')}》" if title.get(i.split("@")[0]) else i
+    out = ["# 我的偏好(工作台自动整理,最近 60 次决定)", "",
+           "> AI 做挑片段、剪辑、文案、封面前先读这份:照着用户最近的采纳/否定来。这里只是例子,不是标准;",
+           "> 同一规律反复出现,才在「8-偏好复盘」里提标准修改提案,用户同意后才改 2-标准/。", ""]
+    for g in db.GATE_NAMES:
+        items = [d for d in ds if d["关卡"] == g][:15]
+        if not items:
+            continue
+        out.append(f"## {g}")
+        for d in items:
+            bits = []
+            if d["采纳"]:
+                bits.append("✅ 采纳 " + "、".join(name(x) for x in d["采纳"].split("|")))
+            if d["否定"]:
+                bits.append("❌ 否定 " + "、".join(name(x) for x in d["否定"].split("|")))
+            if d["标签"]:
+                bits.append("标签:" + d["标签"])
+            if d["备注"]:
+                bits.append("备注:" + d["备注"].replace("\n", " ")[:200])
+            out.append(f"- {d['时间'][5:16].replace('T', ' ')} " + ";".join(bits))
+        out.append("")
+    f.write_text("\n".join(out) + "\n" + PREF_MARK + mine)
+
+
+def decide(gate, oid, adopt="", reject="", tags="", note="", files=""):
+    ok, out = run_db("decide", "--关卡", gate, "--对象", oid, "--采纳", adopt, "--否定", reject, "--标签", tags,
+                     "--备注", note, "--附件", files, "--by", "人工")
+    if ok:
+        try:
+            write_pref_file()
+        except Exception:
+            pass
+    return ok
+
+
+def clear_cooldown(ids):
+    """用户在工作台处理过这些对象:让监测脚本下一轮立即可以重试,并马上检查一次。"""
+    ids = [i for i in ids if i]
+    if not ids:
+        return
+    f = ROOT / "data" / ".watch_clear.json"
+    try:
+        have = json.loads(f.read_text()).get("对象", [])
+    except Exception:
+        have = []
+    f.write_text(json.dumps({"对象": sorted(set(have) | set(ids))}, ensure_ascii=False))
+    kick()
+
+
+_last_kick = [0.0]
+
+
+def kick():
+    """自动处理开着时,马上跑一次检查(不用等下一个 5 分钟)。已有任务在跑就什么也不做。"""
+    if not db.CFG.get("自动执行") or os.environ.get("SOP_NO_KICK") or time.time() - _last_kick[0] < 30:
+        return
+    if (ROOT / "data" / ".watch.lock").exists():
+        return
+    _last_kick[0] = time.time()
+    log = ROOT / "data" / "运行日志" / "autorun.log"
+    log.parent.mkdir(exist_ok=True)
+    subprocess.Popen([sys.executable, str(ROOT / "3-工具" / "watch.py"), "--once"], cwd=ROOT,
+                     stdout=open(log, "a"), stderr=subprocess.STDOUT, start_new_session=True)
 
 
 # ---------------- 写:只通过 db.py ----------------
@@ -147,6 +366,8 @@ def action(a):
     kind, oid = a.get("动作"), a.get("id", "")
     if kind == "打开":
         return open_path(a)
+    if kind == "打开平台":
+        return open_platform(a)
     if kind == "设置":
         return change_setting(a)
     if kind == "代审":
@@ -154,47 +375,259 @@ def action(a):
     if kind == "自动处理":
         return set_auto(bool(a.get("开启")))
     if kind == "批量切片状态":
-        ids = [i for i in (a.get("ids") or []) if ID_RE.match(i)]
-        if a.get("状态") not in CLIP_STATES or not ids:
-            return False, "参数不对"
-        outs, ok = [], True
-        for i in ids:
-            o, t = run_db("set", "clip", i, a["状态"], "--by", "人工", "--note", "工作台")
-            ok &= o
-            outs.append(t)
-        return ok, "\n".join(outs)
+        a = {**a, "动作": "挑片段", "items": [{"id": i} for i in (a.get("ids") or [])]}
+        kind = "挑片段"
+    if kind == "挑片段":
+        return pick_clips(a)
+    if kind == "其余不剪":
+        return rest_off(a)
+    if kind == "恢复":
+        return resume(a)
+    if kind == "现在重试":
+        ids = [i for i in (a.get("对象") or []) if ID_RE.match(i)]
+        clear_cooldown(ids)
+        return True, "已解除等待,下一次检查就会重试"
+    if kind == "封面重做":
+        return cover_redo(a)
+    if kind == "上传参考":
+        return upload_ref(a)
     if not ID_RE.match(oid):
         return False, "ID 不合法"
     note = "工作台:" + (a.get("备注") or "").strip()
     if kind == "切片状态":
         if a.get("状态") not in CLIP_STATES:
             return False, "不支持的状态"
-        return run_db("set", "clip", oid, a["状态"], "--by", "人工", "--note", note)
+        if a["状态"] in ("待剪", "放弃") and clip_state(oid) == "候选":
+            return pick_clips({**a, "items": [{"id": oid, "剪辑要求": a.get("剪辑要求", "")}]})
+        ok, out = run_db("set", "clip", oid, a["状态"], "--by", "人工", "--note", note)
+        clear_cooldown([oid])
+        return ok, out
     if kind == "看片":
         res = a.get("结论")
         if res not in ("通过", "打回"):
             return False, "结论只能是通过或打回"
+        tags = [t for t in (a.get("标签") or []) if isinstance(t, str)][:10]
+        reason = (("【" + "、".join(tags) + "】") if tags else "") + (a.get("原因") or "").strip()
         args = ["review", oid, res, "--by", "人工", "--reviewer", "工作台"]
-        if a.get("原因"):
-            args += ["--reason", a["原因"]]
-        return run_db(*args)
+        if reason:
+            args += ["--reason", reason]
+        ok, out = run_db(*args)
+        if ok:
+            decide("看片", oid, oid if res == "通过" else "", oid if res == "打回" else "", ",".join(tags), (a.get("原因") or "").strip())
+            clear_cooldown([oid])
+        return ok, out
     if kind == "发布状态":
         if a.get("状态") not in PUB_STATES:
             return False, "不支持的状态"
-        return run_db("set", "pub", oid, a["状态"], "--by", "人工", "--note", note)
+        ok, out = run_db("set", "pub", oid, a["状态"], "--by", "人工", "--note", note)
+        if ok and a["状态"] in ("待发布", "已废弃"):
+            decide("确认发布", oid, oid if a["状态"] == "待发布" else "", oid if a["状态"] == "已废弃" else "",
+                   "", pub_edit_note(oid))
+        if ok:
+            clear_cooldown([oid])
+        return ok, out
     if kind == "改文案":
         pairs = [f"{k}={v}" for k, v in (a.get("字段") or {}).items() if k in PUB_FIELDS]
         if not pairs:
             return False, "没有可改的字段"
         return run_db("update", "pub", oid, *pairs, "--by", "人工")
     if kind == "选封面":
-        p = rel(a.get("文件"))
-        if not p or Path(p).suffix.lower() not in IMG_EXT or "/封面/候选/" not in "/" + p:
-            return False, "只能选 封面/候选/ 里的图片"
-        return run_db("update", "pub", oid, f"封面竖={p}", "封面横=", f"备注=工作台选定封面 {Path(p).name}", "--by", "人工")
+        return pick_cover(a, oid)
     if kind == "打开":
         return open_path(a)
     return False, "未知动作"
+
+
+def clip_state(cid):
+    c = db.conn()
+    r = c.execute("select 状态 from clips where clip_id=?", (cid,)).fetchone()
+    c.close()
+    return r[0] if r else None
+
+
+def clip_row(cid):
+    c = db.conn()
+    r = c.execute("select * from clips where clip_id=?", (cid,)).fetchone()
+    pubs = rows(c, "select * from publishes where clip_id=?", cid)
+    c.close()
+    return (dict(r) if r else None), pubs
+
+
+def pick_clips(a):
+    """挑片段:剪/不剪,每条可带"给 AI 的剪辑要求";不剪可带原因标签。每条都记一条挑选决策。"""
+    st = a.get("状态")
+    if st not in ("待剪", "放弃"):
+        return False, "状态只能是待剪或放弃"
+    items = [x for x in (a.get("items") or []) if isinstance(x, dict) and ID_RE.match(str(x.get("id", "")))]
+    if not items:
+        return False, "没有选中的片段"
+    tags = ",".join(t for t in (a.get("标签") or []) if isinstance(t, str))
+    outs, ok = [], True
+    for it in items:
+        cid, req = it["id"], (it.get("剪辑要求") or "").strip()[:1000]
+        if st == "待剪" and req:
+            o, t = run_db("update", "clip", cid, f"剪辑要求={req}", "--by", "人工")
+            ok &= o
+            outs.append(t)
+        o, t = run_db("set", "clip", cid, st, "--by", "人工", "--note", "工作台:" + ("剪辑要求:" + req if req else (a.get("备注") or "挑选")))
+        ok &= o
+        outs.append(t)
+        if o:
+            decide("挑选", cid, cid if st == "待剪" else "", cid if st == "放弃" else "", tags, req or (a.get("备注") or ""))
+    clear_cooldown([x["id"] for x in items])
+    return ok, "\n".join(outs)
+
+
+def rest_off(a):
+    """这一场录像挑完了:没勾的候选明确记为"不剪(未选)",以后分析偏好时能分清"不要"和"还没看"。"""
+    sid = a.get("source_id", "")
+    if not ID_RE.match(sid):
+        return False, "素材 ID 不合法"
+    c = db.conn()
+    ids = [r[0] for r in c.execute("select clip_id from clips where source_id=? and 状态='候选'", (sid,))]
+    c.close()
+    if not ids:
+        return True, "这场录像没有剩下的候选"
+    return pick_clips({"状态": "放弃", "items": [{"id": i} for i in ids], "标签": ["未选"], "备注": "挑选完成时没勾(未选)"})
+
+
+RESUME = {  # (对象, 当前状态) -> 允许的去向 {目标状态: 按钮说明}
+    ("source", "需人工"): {"待整理": "重新整理", "已整理": "重新转写复盘", "已复盘": "我处理好了(复盘已写好)"},
+    ("clip", "需人工"): {"待剪": "让 AI 重剪", "已剪辑": "我处理好了,去看片", "候选": "退回候选", "放弃": "不剪了"},
+    ("pub", "需人工"): {"待发布": "让 AI 重试发布", "已定时": "我已在平台设好定时", "已发布": "已经发出去了",
+                     "草稿": "退回草稿", "已废弃": "这个平台不发了"},
+}
+
+
+def resume(a):
+    k, oid, to = a.get("对象"), a.get("id", ""), a.get("状态")
+    cur = {"source": "sources", "clip": "clips", "pub": "publishes"}.get(k)
+    if not cur or not ID_RE.match(oid):
+        return False, "参数不对"
+    key = {"source": "source_id", "clip": "clip_id", "pub": "publish_id"}[k]
+    c = db.conn()
+    r = c.execute(f"select 状态 from {cur} where {key}=?", (oid,)).fetchone()
+    c.close()
+    if not r:
+        return False, "找不到记录"
+    allowed = RESUME.get((k, r[0]), {})
+    if to not in allowed:
+        return False, f"现在是「{r[0]}」,不能直接改成「{to}」"
+    ok, out = run_db("set", k, oid, to, "--by", "人工", "--note", "工作台:" + allowed[to] + ((":" + a["备注"]) if a.get("备注") else ""))
+    if ok:
+        clear_cooldown([oid])
+    return ok, out
+
+
+def pub_edit_note(pid):
+    """确认发布时,标题和 AI 推荐的有没有不同(改动本身是最强的偏好信号)。"""
+    c = db.conn()
+    r = c.execute("select 标题,推荐,候选标题 from publishes where publish_id=?", (pid,)).fetchone()
+    c.close()
+    if not r:
+        return ""
+    try:
+        cands = {x.split("|")[0]: x.split("|")[-1] for x in json.loads(r["候选标题"] or "[]")}
+    except ValueError:
+        cands = {}
+    rec = cands.get(r["推荐"] or "")
+    if rec and rec != r["标题"]:
+        used = next((k for k, v in cands.items() if v == r["标题"]), None)
+        return f"标题没用推荐:推荐「{rec}」→ 用了" + (f"候选 {used}" if used else "自己改的") + f"「{r['标题']}」"
+    return ""
+
+
+def pick_cover(a, oid):
+    """选封面:同一条视频的所有平台草稿一起用这张竖版;可带备注(出横版时照着微调)。"""
+    p = rel(a.get("文件"))
+    if not p or Path(p).suffix.lower() not in IMG_EXT or "/封面/候选/" not in "/" + p:
+        return False, "只能选 封面/候选/ 里的图片"
+    c = db.conn()
+    r = c.execute("select clip_id from publishes where publish_id=?", (oid,)).fetchone() if "@" in oid else None
+    cid = r[0] if r else oid
+    targets = [x[0] for x in c.execute("select publish_id from publishes where clip_id=? and 状态='草稿' "
+                                       "and coalesce(封面竖,'')=''", (cid,))] or ([oid] if "@" in oid else [])
+    k = c.execute("select 本地文件夹 from clips where clip_id=?", (cid,)).fetchone()
+    c.close()
+    if not targets:
+        return False, "这条视频没有等选封面的草稿"
+    note = (a.get("备注") or "").strip()[:1000]
+    outs, ok = [], True
+    for pid in targets:
+        o, t = run_db("update", "pub", pid, f"封面竖={p}", "封面横=", f"备注=工作台选定封面 {Path(p).name}" + (f";要求:{note}" if note else ""), "--by", "人工")
+        ok &= o
+        outs.append(t)
+    others = [x for x in cover_candidates(k[0] if k else None) if x != p]
+    if note and k:
+        add_cover_note(k[0], f"选了 {Path(p).name},出横版时照这个改:{note}")
+    decide("选封面", cid, p, "|".join(others), ",".join(a.get("标签") or []), note)
+    clear_cooldown([cid, *targets])
+    return ok, "\n".join(outs)
+
+
+def add_cover_note(folder, text):
+    d = _cover_dir(folder, "")
+    if not d:
+        return
+    d.mkdir(parents=True, exist_ok=True)
+    f = d / "要求.md"
+    head = "" if f.exists() else "# 你对这条封面的要求(AI 做封面前先读)\n\n"
+    with open(f, "a") as fh:
+        fh.write(head + f"- {time.strftime('%m-%d %H:%M')} {text}\n")
+
+
+def cover_redo(a):
+    """都不满意:按备注/参考图重做三张候选。旧候选挪到 封面/历史/第N轮/(不删)。"""
+    cid = a.get("id", "")
+    k, pubs = clip_row(cid)
+    if not k or not k.get("本地文件夹"):
+        return False, "找不到这条视频的文件夹"
+    note = (a.get("备注") or "").strip()[:1000]
+    refs = cover_refs(k["本地文件夹"])
+    if not note and not refs:
+        return False, "写一下想怎么改,或者先上传一张参考图"
+    cand = _cover_dir(k["本地文件夹"], "候选")
+    old = cover_candidates(k["本地文件夹"])
+    n = cover_rounds(k["本地文件夹"]) + 1
+    if cand and cand.is_dir():
+        hist = _cover_dir(k["本地文件夹"], "历史") / f"第{n}轮"
+        hist.mkdir(parents=True, exist_ok=True)
+        for f in cand.iterdir():
+            if f.is_file():
+                shutil.move(str(f), str(hist / f.name))
+    add_cover_note(k["本地文件夹"], f"第 {n} 次重做三张候选:" + (note or "按参考图的风格") +
+                   (f"(参考图:{', '.join(Path(r).name for r in refs)})" if refs else ""))
+    decide("选封面", cid, "", "|".join(old), ",".join(a.get("标签") or []), note, "|".join(refs))
+    clear_cooldown([cid, *[p["publish_id"] for p in pubs]])
+    return True, f"已送回 AI 重做(第 {n} 次),旧候选放在 封面/历史/第{n}轮/"
+
+
+def upload_ref(a):
+    """上传参考图:存到 <成片文件夹>/封面/参考/;勾了"以后都学这个"再复制一份到全局 参考/封面/。"""
+    cid = a.get("id", "")
+    k, _ = clip_row(cid)
+    if not k or not k.get("本地文件夹"):
+        return False, "找不到这条视频的文件夹"
+    name = re.sub(r"[^\w.\-\u4e00-\u9fff]", "_", Path(a.get("文件名") or "参考.png").name)[-60:]
+    if Path(name).suffix.lower() not in IMG_EXT:
+        return False, "只支持 png / jpg / webp 图片"
+    try:
+        data = base64.b64decode((a.get("数据") or "").split(",")[-1], validate=True)
+    except ValueError:
+        return False, "图片数据不对"
+    if not data or len(data) > 10_000_000:
+        return False, "图片不能超过 10 MB"
+    d = _cover_dir(k["本地文件夹"], "参考")
+    d.mkdir(parents=True, exist_ok=True)
+    f = d / f"{time.strftime('%m%d-%H%M%S')}_{name}"
+    f.write_bytes(data)
+    msg = f"已上传参考图:{f.name}"
+    if a.get("全局"):
+        g = ROOT / "参考" / "封面"
+        g.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(f, g / f.name)
+        msg += ",也放进了全局「参考/封面」"
+    return True, msg
 
 
 # 左下角设置:只允许改这几项,值只能从列表里选
@@ -249,6 +682,117 @@ def auto_status():
             "最近一次": last[-1].name if last else ""}
 
 
+STAGE_NAME = {"8-偏好复盘": "总结你的偏好", "0-整理": "整理录像", "1-复盘选片": "转写、复盘、挑片段", "2-剪辑": "剪辑成片", "4-文案": "写标题文案",
+              "5-封面": "做封面", "6-发布": "在平台设定时发布", "7-数据复盘": "看数据、回填链接",
+              "代审-挑选": "代你挑片段", "代审-看片": "代你看成片", "代审-选封面": "代你选封面", "代审-发布": "代你确认发布"}
+
+
+def _tail_lines(path, n=400_000):
+    with open(path, "rb") as f:
+        f.seek(0, 2)
+        size = f.tell()
+        f.seek(max(0, size - n))
+        return f.read().decode("utf-8", "ignore").splitlines()
+
+
+def _steps(logf, k=6):
+    """从 AI 的运行日志里挑最近几步,翻成人话。兼容 Claude Code / Codex 的 JSON 流。"""
+    out = []
+    for ln in _tail_lines(logf):
+        try:
+            d = json.loads(ln)
+        except ValueError:
+            continue
+        if not isinstance(d, dict):
+            continue
+        if d.get("type") == "assistant":                      # Claude Code
+            for c in d.get("message", {}).get("content", []):
+                if c.get("type") == "text" and c.get("text", "").strip():
+                    out.append(("说", c["text"].strip()))
+                elif c.get("type") == "tool_use":
+                    inp = c.get("input") or {}
+                    name = c.get("name", "").replace("mcp__chatcut_desktop__", "ChatCut·")
+                    desc = inp.get("description") or inp.get("command") or inp.get("file_path") or ""
+                    out.append(("做", f"{name} {desc}".strip()))
+        item = d.get("item") if isinstance(d.get("item"), dict) else None   # Codex
+        if item:
+            if item.get("type") == "agent_message":
+                out.append(("说", item.get("text", "")))
+            elif item.get("type") == "command_execution":
+                out.append(("做", item.get("command", "")))
+    return [{"类型": t, "内容": re.sub(r"\s+", " ", x)[:160]} for t, x in out[-k:]]
+
+
+def live():
+    """左下角实时状态:AI 在不在干活、在做哪一步、最近几步、上次结果、下次检查时间。"""
+    from datetime import datetime, timedelta
+    lock = ROOT / "data" / ".watch.lock"
+    logdir = ROOT / "data" / "运行日志"
+    res = {"在干活": False, "开启": bool(db.CFG.get("自动执行")), "间隔秒": int(db.CFG.get("监测间隔秒", 300))}
+    if lock.exists():
+        lines = lock.read_text(errors="ignore").splitlines()
+        info = {}
+        if len(lines) > 1:
+            try:
+                info = json.loads(lines[1])
+            except ValueError:
+                pass
+        stage = info.get("环节") or (lines[0].split(" ")[0] if lines else "")
+        pid = info.get("pid") or (re.search(r"pid=(\d+)", lines[0] or "") or [None, None])[1]
+        alive = True
+        if pid:
+            try:
+                os.kill(int(pid), 0)
+            except (OSError, ValueError):
+                alive = False
+        if alive:
+            res.update(在干活=True, 环节=stage, 说明="本机转写(不用 AI)" if info.get("步骤") == "转写" else STAGE_NAME.get(stage, stage),
+                       对象=info.get("对象", []), 开始=info.get("开始"))
+            lf = logdir / info["日志"] if info.get("日志") else None
+            if lf and lf.exists():
+                res["最近几步"] = _steps(lf)
+                res["日志"] = str(lf.relative_to(ROOT))
+    al = logdir / "autorun.log"
+    if al.exists():
+        rows = [l for l in _tail_lines(al, 20000) if l.startswith("[")]
+        ends = [l for l in rows if " 结束" in l or "超过 3 小时" in l]
+        if ends:
+            m = re.match(r"\[(.+?)\] (\S+) (\S+) 结束\(返回码 (\d+)\):(.*)", ends[-1])
+            res["上次"] = {"时间": m[1][5:16], "结果": m[2], "环节": STAGE_NAME.get(m[3], m[3]), "说明": m[5][:200]} if m \
+                else {"说明": ends[-1][:200]}
+        if rows:
+            t0 = re.match(r"\[(.+?)\]", rows[-1])
+            try:
+                last = datetime.strptime(t0[1], "%Y-%m-%d %H:%M:%S")
+                nxt = last + timedelta(seconds=res["间隔秒"])
+                res["上次检查"] = last.strftime("%H:%M")
+                res["下次检查秒"] = max(0, int((nxt - datetime.now()).total_seconds()))
+            except (TypeError, ValueError):
+                pass
+            res["最近一句"] = re.sub(r"^\[.+?\] ", "", rows[-1])[:200]
+    res["下一步"] = next_up()
+    return res
+
+
+def next_up():
+    """监测脚本下一次会做什么(去掉冷却中的对象):给左下角和卡片写"下一步:谁、大约何时"。"""
+    try:
+        c = db.conn()
+        todo = db.pending(c)
+        c.close()
+    except SystemExit:
+        return None
+    ws = watch_state()
+    order = ["0-整理", "1-复盘选片", "代审-挑选", "2-剪辑", "代审-看片", "4-文案", "5-封面", "代审-选封面", "代审-发布",
+             "6-发布", "7-数据复盘", "8-偏好复盘"]
+    ai = sorted([x for x in todo if x["执行者"] == "AI"], key=lambda x: order.index(x["环节"]) if x["环节"] in order else 99)
+    for x in ai:
+        live = [i for i in x["对象"] if not (ws.get(i) or {}).get("冷却")]
+        if live:
+            return {"环节": x["环节"], "说明": STAGE_NAME.get(x["环节"], x["环节"]), "对象": live[:5], "共": len(live)}
+    return None
+
+
 def set_auto(on):
     cfg_path = ROOT / "配置.json"
     if not cfg_path.exists():
@@ -286,6 +830,21 @@ def set_gate(a):
     c.commit()
     c.close()
     return True, f"AI 代审·{g} 已{'打开:之后这一步由 AI 替你决定' if on else '关闭:这一步回到由你决定'}"
+
+
+def open_platform(a):
+    """在发布用的浏览器里打开平台的登录页/作品管理页(登录态要留在 AI 发布用的那个浏览器里)。只认内置的网址。"""
+    plat, which = a.get("平台"), a.get("页面")
+    url = (db.LOGIN_URL if which == "登录" else db.ADMIN_URL).get(plat)
+    if not url:
+        return False, "未知平台"
+    what = "登录页" if which == "登录" else "作品管理页"
+    app = {"ego lite": "ego lite"}.get(db.CFG.get("发布浏览器") or "")
+    if app and Path(f"/Applications/{app}.app").exists():
+        subprocess.run(["open", "-a", app, url])
+        return True, f"已在 {app} 里打开{plat}{what}"
+    subprocess.run(["open", url])
+    return True, f"已打开{plat}{what}"
 
 
 def open_path(a):
@@ -337,6 +896,8 @@ class H(BaseHTTPRequestHandler):
         try:
             if u.path in ("/", "/index.html"):
                 return self._send(200, (HERE / "index.html").read_bytes(), "text/html; charset=utf-8")
+            if u.path == "/api/live":
+                return self._send(200, live())
             if u.path == "/api/state":
                 return self._send(200, state())
             if u.path == "/file":
@@ -357,7 +918,9 @@ class H(BaseHTTPRequestHandler):
             return self._send(400, {"错误": "请求不合法"})
         n = int(self.headers.get("Content-Length") or 0)
         try:
-            a = json.loads(self.rfile.read(min(n, 100_000)) or b"{}")
+            if n > 15_000_000:
+                return self._send(413, {"错误": "太大了"})
+            a = json.loads(self.rfile.read(n) or b"{}")
             ok, out = action(a)
         except Exception as e:
             ok, out = False, str(e)

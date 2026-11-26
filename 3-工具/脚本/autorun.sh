@@ -2,7 +2,7 @@
 # 用本机 launchd 定时跑监测 / 常驻工作台。不改 配置.json。
 # 用法(在项目根目录,或任意位置调用本脚本均可):
 #   zsh 3-工具/脚本/autorun.sh install            # 每隔「监测间隔秒」跑一次 watch.py --once
-#   zsh 3-工具/脚本/autorun.sh install-workbench  # KeepAlive 常驻工作台(端口 8765)
+#   zsh 3-工具/脚本/autorun.sh install-workbench  # KeepAlive 常驻工作台(端口取 配置.工作台端口,默认 8765)
 #   zsh 3-工具/脚本/autorun.sh uninstall          # 卸掉上面两个任务
 #   zsh 3-工具/脚本/autorun.sh status             # 看是否已装、是否在跑、最近日志
 set -euo pipefail
@@ -40,6 +40,17 @@ try:
 except Exception:
     n = 300
 print(n if n > 0 else 300)
+' "$ROOT"
+}
+
+port() {
+  python3 -I -c '
+import json, pathlib, sys
+try:
+    n = int(json.load((pathlib.Path(sys.argv[1]) / "配置.json").open()).get("工作台端口") or 8765)
+except Exception:
+    n = 8765
+print(n)
 ' "$ROOT"
 }
 
@@ -95,6 +106,8 @@ write_plist_wb() {
     <string>${PYTHON3}</string>
     <string>${ROOT}/3-工具/工作台/server.py</string>
     <string>--no-open</string>
+    <string>--port</string>
+    <string>${WB_PORT}</string>
   </array>
   <key>WorkingDirectory</key>
   <string>${ROOT}</string>
@@ -153,9 +166,10 @@ cmd_install() {
 cmd_install_workbench() {
   ensure_logdir
   mkdir -p "$AGENTS_DIR"
+  WB_PORT="$(port)"
   write_plist_wb
   load_plist "$LABEL_WB" "$PLIST_WB"
-  echo "✅ 已安装工作台任务 ${LABEL_WB}(KeepAlive,端口 8765,日志 ${LOG})"
+  echo "✅ 已安装工作台任务 ${LABEL_WB}(KeepAlive,端口 ${WB_PORT},日志 ${LOG}) → http://127.0.0.1:${WB_PORT}/"
 }
 
 cmd_uninstall() {

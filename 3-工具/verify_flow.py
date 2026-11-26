@@ -125,10 +125,11 @@ expect("领取", ["set", "clip", T, "剪辑中", "--by", "AI"])
 expect("提交", ["set", "clip", T, "已剪辑", "--by", "AI"])
 expect("看片通过", ["review", T, "通过", "--by", "人工", "--reviewer", "测试"])
 check("C 通过 → 4-文案 待办", in_next("4-文案", T))
-pub = {"clip_id": T, "publishes": [{"平台": "抖音", "标题": "模拟标题", "候选标题": ["A", "B", "C"], "推荐": "A"}],
+PLATS = db.CFG.get("发布平台") or ["抖音"]
+pub = {"clip_id": T, "publishes": [{"平台": pl, "标题": "模拟标题", "候选标题": ["A", "B", "C"], "推荐": "A"} for pl in PLATS],
        "封面字候选": [{"文字": "两行\n【字】", "道具": "方案册"}]}
 expect("写发布草稿", ["add-pub", j("p.json", pub)])
-P = T + "@抖音"
+P = T + "@" + PLATS[0]
 check("C 草稿 → 不再出现在文案待办,出现在 5-封面", not in_next("4-文案", T) and in_next("5-封面", P))
 # 封面三步:无候选 → 5-封面;有候选未选 → 人工-选封面;已选竖缺横 → 5-封面;竖横齐 → 人工-审核发布
 cover_home = tmpd / "成片模拟"
@@ -147,6 +148,14 @@ expect("用户授权:草稿→待发布", ["set", "pub", P, "待发布", "--by",
 check("C 待发布 → 6-发布 待办", in_next("6-发布", P))
 rc, out = run("plan-slots")
 check("C 排期给出时间", rc == 0 and f"SLOT {P}" in out, out.splitlines()[0] if out else "")
+expect("记一次平台核对(上次核对)", ["checked", P, "在作品管理页看到『定时发布』"])
+expect("记一条关卡决策", ["decide", "--关卡", "看片", "--对象", T, "--采纳", T, "--标签", "太长", "--by", "人工"])
+expect("关卡名不对被拒", ["decide", "--关卡", "随便", "--对象", T, "--by", "人工"], ok=False)
+rc, out = run("decisions")
+check("C 决策可读出", rc == 0 and "太长" in out)
+expect("偏好复盘记时间", ["pref-done", "--by", "AI"])
+rc, out = run("overlap", T)
+check("C 重叠检查可运行", rc == 0)
 expect("不能跳过定时直接'已发布'", ["set", "pub", P, "已发布", "--by", "AI"], ok=False)
 expect("记录定时时间(过去时间,模拟已到点)", ["update", "pub", P, "发布时间=2000-01-01T10:00:00+08:00", "--by", "AI"])
 expect("待发布→已定时", ["set", "pub", P, "已定时", "--by", "AI"])

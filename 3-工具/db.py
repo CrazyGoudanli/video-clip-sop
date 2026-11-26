@@ -26,6 +26,12 @@
 AI 代审:配置.json 的 "AI代审" 里某个关卡(挑选/看片/选封面/确认发布)被用户打开时,
 AI 可以用 --by AI代审 代替用户做这个关卡;没打开时一律拒绝。每次代审都记入 events。
   python3 3-工具/db.py plan-slots                    给"待发布"的记录排定时时间(只读,不写库)
+  python3 3-工具/db.py overlap <切片ID>               和同一场录像里其他在做的片段重叠了多少秒(只读)
+  python3 3-工具/db.py checked <发布ID> "<在平台后台亲眼看到的内容>"   记一次"上次核对"(时间自动填)
+  python3 3-工具/db.py decide --关卡 挑选|看片|选封面|确认发布 --对象 <ID> [--采纳 ...] [--否定 ...] [--标签 太长,钩子弱] [--备注 ...] [--附件 ...] --by 人工
+                                                     记一条"采纳/否定/备注"决策(工作台每个关卡都会写)
+  python3 3-工具/db.py decisions                     列出全部决策(只读,偏好复盘用)
+  python3 3-工具/db.py pref-done --by AI             偏好复盘做完后记下时间
 """
 import argparse, json, pathlib, sqlite3, sys
 from datetime import datetime, timedelta, timezone
@@ -104,9 +110,25 @@ NEW_COLUMNS = {
         "重剪次数": "INTEGER DEFAULT 0", "看片结论": "TEXT", "打回原因": "TEXT", "看片人": "TEXT", "看片时间": "TEXT",
         "成片文件": "TEXT", "字幕文件": "TEXT", "剪辑工具": "TEXT", "剪辑工程": "TEXT",
         "封面字候选": "TEXT", "封面字": "TEXT", "封面道具": "TEXT", "剪辑标准版本": "TEXT",
+        "剪辑要求": "TEXT",            # 用户挑片段时写给 AI 的要求(和"备注"分开:备注是处理记录)
         "创建时间": "TEXT", "更新时间": "TEXT"},
-    "publishes": {"包装标准版本": "TEXT", "封面竖": "TEXT", "封面横": "TEXT", "创建时间": "TEXT", "更新时间": "TEXT"},
+    "publishes": {"包装标准版本": "TEXT", "封面竖": "TEXT", "封面横": "TEXT",
+                  "后台链接": "TEXT",            # 发布前:平台作品管理页;发布后仍保留
+                  "上次核对": "TEXT", "上次核对时间": "TEXT",   # AI 最后一次在平台后台亲眼看到了什么、几点
+                  "创建时间": "TEXT", "更新时间": "TEXT"},
 }
+# 各平台作品管理页(发布前"去后台查看"用)
+ADMIN_URL = {"抖音": "https://creator.douyin.com/creator-micro/content/manage",
+             "小红书": "https://creator.xiaohongshu.com/new/note-manager",
+             "视频号": "https://channels.weixin.qq.com/platform/post/list",
+             "B站": "https://member.bilibili.com/platform/upload-manager/article"}
+LOGIN_URL = {"抖音": "https://creator.douyin.com/", "小红书": "https://creator.xiaohongshu.com/login",
+             "视频号": "https://channels.weixin.qq.com/login.html", "B站": "https://passport.bilibili.com/login"}
+# 人工关卡的决策记录:给了哪些选项、采纳了哪个、否定了哪些、原因标签、备注、附件(参考图等)
+DECISIONS = """CREATE TABLE IF NOT EXISTS decisions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, 时间 TEXT, 关卡 TEXT, 对象ID TEXT,
+  采纳 TEXT, 否定 TEXT, 标签 TEXT, 备注 TEXT, 附件 TEXT, 操作者 TEXT)"""
+GATE_NAMES = ("挑选", "看片", "选封面", "确认发布")
 EVENTS = """CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT, 时间 TEXT, 对象 TEXT, 对象ID TEXT,
   动作 TEXT, 旧值 TEXT, 新值 TEXT, 操作者 TEXT, 备注 TEXT)"""
@@ -160,6 +182,7 @@ def cmd_migrate(a):
     c = conn()
     c.execute(EVENTS)
     c.execute(META)
+    c.execute(DECISIONS)
     added = []
     for t, spec in NEW_COLUMNS.items():
         have = cols(c, t)
@@ -168,6 +191,8 @@ def cmd_migrate(a):
                 c.execute(f'alter table {t} add column "{k}" {typ}')
                 added.append(f"{t}.{k}")
     c.execute("update clips set 重剪次数=0 where 重剪次数 is null")
+    for plat, url in ADMIN_URL.items():
+        c.execute("update publishes set 后台链接=? where 平台=? and coalesce(后台链接,'')=''", (url, plat))
     # 旧数据规整:素材状态"已生成"(旧复盘池)= 已复盘
     for r in c.execute("select source_id,状态 from sources where 状态='已生成'").fetchall():
         c.execute("update sources set 状态='已复盘' where source_id=?", (r[0],))
@@ -318,6 +343,14 @@ def pending(c):
     add("人工-非启用平台", "人工", other, "未启用平台(配置.发布平台 之外)上已到点的定时作品:需人工确认,或在配置里启用该平台")
     add("人工-补链接", "人工", q("select publish_id from publishes where 状态='已发布' and coalesce(作品链接,'')=''"),
         "已发布但没有作品链接,没法采集数据(可让 AI 去平台后台找)")
+    # 8 偏好复盘:你在关卡上的采纳/否定攒够样本(距上次复盘新增 ≥20 条决策)就让 AI 总结一次
+    last = (c.execute("select 值 from meta where 键='偏好复盘时间'").fetchone() or [""])[0]
+    try:
+        n_new = c.execute("select count(*) from decisions where 时间>?", (last,)).fetchone()[0]
+    except sqlite3.OperationalError:
+        n_new = 0
+    if n_new >= int(CFG.get("偏好复盘样本", 20)):
+        add("8-偏好复盘", "AI", [f"新增决策 {n_new} 条"], "关卡上的采纳/否定攒够了,总结你的偏好、提标准修改提案")
     need = q("select '素材 '||source_id from sources where 状态='需人工'") + \
         q("select '切片 '||clip_id from clips where 状态='需人工'") + \
         q("select '发布 '||publish_id from publishes where 状态='需人工'")
@@ -475,6 +508,98 @@ def cmd_review(a):
     print(f"✅ {a.id} 看片{a.result}" + (f",当前状态:{c.execute('select 状态 from clips where clip_id=?', (a.id,)).fetchone()[0]}"))
 
 
+def secs(t):
+    try:
+        h, m, s = (t or "").split(":")
+        return int(h) * 3600 + int(m) * 60 + float(s)
+    except ValueError:
+        return None
+
+
+ACTIVE_CLIP = ("候选", "待剪", "剪辑中", "已剪辑", "已通过", "需人工")
+
+
+def overlaps(c, only=None):
+    """同一场录像里,时间段互相重叠的片段:{clip_id: [{"片段":..., "标题":..., "秒":...}]}。
+    放弃的不算;两条都在做(候选及以后)才提示。"""
+    out = {}
+    rs = [dict(r) for r in c.execute("select clip_id,source_id,起始,结束,标题,状态 from clips")]
+    by = {}
+    for r in rs:
+        if r["状态"] in ACTIVE_CLIP:
+            by.setdefault(r["source_id"], []).append(r)
+    for group in by.values():
+        for a in group:
+            if only and a["clip_id"] != only:
+                continue
+            a0, a1 = secs(a["起始"]), secs(a["结束"])
+            if a0 is None or a1 is None:
+                continue
+            for b in group:
+                if b is a:
+                    continue
+                b0, b1 = secs(b["起始"]), secs(b["结束"])
+                if b0 is None or b1 is None:
+                    continue
+                ov = min(a1, b1) - max(a0, b0)
+                if ov > 0:
+                    out.setdefault(a["clip_id"], []).append({"片段": b["clip_id"], "标题": b["标题"], "状态": b["状态"], "秒": round(ov)})
+    return out
+
+
+def cmd_overlap(a):
+    c = conn()
+    row(c, "clip", a.id)
+    hit = overlaps(c, a.id).get(a.id, [])
+    if not hit:
+        print(f"✅ {a.id} 和同一场录像里其他在做的片段没有重叠")
+        return
+    for h in hit:
+        print(f"⚠️ {a.id} 与 {h['片段']}({h['状态']})重叠 {h['秒']} 秒:{h['标题']}")
+
+
+def cmd_checked(a):
+    c = conn()
+    r = row(c, "pub", a.id)
+    t = now()
+    c.execute("update publishes set 上次核对=?, 上次核对时间=?, 更新时间=? where publish_id=?", (a.text, t, t, a.id))
+    log(c, "pub", a.id, "平台核对", r["上次核对"] if "上次核对" in r.keys() else None, a.text, a.by)
+    c.commit()
+    print(f"✅ {a.id} 已记核对:{a.text}")
+
+
+def record_decision(c, gate, oid, adopt="", reject="", tags="", note="", files="", by="人工"):
+    c.execute(DECISIONS)
+    c.execute("insert into decisions (时间,关卡,对象ID,采纳,否定,标签,备注,附件,操作者) values (?,?,?,?,?,?,?,?,?)",
+              (now(), gate, oid, adopt or None, reject or None, tags or None, note or None, files or None, by))
+
+
+def cmd_decide(a):
+    check_by(a.by)
+    if a.关卡 not in GATE_NAMES:
+        die("关卡只能是:" + "、".join(GATE_NAMES))
+    c = conn()
+    record_decision(c, a.关卡, a.对象, a.采纳, a.否定, a.标签, a.备注, a.附件, a.by)
+    c.commit()
+    print(f"✅ 已记录 {a.关卡} 决策:{a.对象}")
+
+
+def cmd_decisions(a):
+    c = conn()
+    c.execute(DECISIONS)
+    for r in c.execute("select * from decisions order by id"):
+        print(" | ".join(f"{k}={r[k]}" for k in r.keys() if r[k] not in (None, "")))
+
+
+def cmd_pref_done(a):
+    check_by(a.by)
+    c = conn()
+    c.execute("insert or replace into meta (键,值) values ('偏好复盘时间',?)", (now(),))
+    log(c, "meta", "偏好复盘时间", "偏好复盘", None, now(), a.by)
+    c.commit()
+    print("✅ 已记下偏好复盘时间,攒够新的决策再复盘")
+
+
 def load_json(p):
     try:
         return json.loads(pathlib.Path(p).read_text())
@@ -545,6 +670,8 @@ def cmd_add_pub(a):
                   ",".join(PUB_FIELDS) + ") values (" + ",".join("?" * (8 + len(PUB_FIELDS))) + ")",
                   (pid, clip["clip_id"], clip["来源"], it["平台"], "草稿", json.dumps(cands, ensure_ascii=False),
                    now(), now(), *[it.get(k) for k in PUB_FIELDS]))
+        if ADMIN_URL.get(it["平台"]) and "后台链接" in cols(c, "publishes"):
+            c.execute("update publishes set 后台链接=? where publish_id=?", (ADMIN_URL[it["平台"]], pid))
         log(c, "pub", pid, "新建", None, "草稿", "AI")
         print(f"✅ 新建发布草稿 {pid}")
     if data.get("封面字候选"):
@@ -629,6 +756,16 @@ def main():
     x = sp.add_parser("add-pub"); x.add_argument("file"); x.set_defaults(f=cmd_add_pub)
     x = sp.add_parser("add-metrics"); x.add_argument("file"); x.set_defaults(f=cmd_add_metrics)
     sp.add_parser("plan-slots").set_defaults(f=cmd_plan_slots)
+    x = sp.add_parser("overlap"); x.add_argument("id"); x.set_defaults(f=cmd_overlap)
+    x = sp.add_parser("checked"); x.add_argument("id"); x.add_argument("text"); x.add_argument("--by", default="AI"); x.set_defaults(f=cmd_checked)
+    sp.add_parser("decisions").set_defaults(f=cmd_decisions)
+    x = sp.add_parser("pref-done"); x.add_argument("--by", default="AI"); x.set_defaults(f=cmd_pref_done)
+    x = sp.add_parser("decide")
+    for k in ("关卡", "对象"):
+        x.add_argument("--" + k, required=True)
+    for k in ("采纳", "否定", "标签", "备注", "附件"):
+        x.add_argument("--" + k, default="")
+    x.add_argument("--by", default="人工"); x.set_defaults(f=cmd_decide)
     a = p.parse_args()
     a.f(a)
 

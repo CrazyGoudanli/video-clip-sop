@@ -81,6 +81,9 @@ if drv == "Codex":
     if ok:
         code, out = run(["codex", "login", "status"])
         add(G, "Codex 已登录", code == 0 and "Logged in" in out, "用户", "在终端运行 `codex login` 并登录", out[:60])
+    # Codex 在沙箱里跑,看不到 GPU:本机转写(mlx_whisper)不能交给它。watch.py 会在启动 AI 前自己转写。
+    add(G, "Codex 沙箱用不了 GPU(已由监测脚本先转写)", False, "AI",
+        "知悉即可:转写由 watch.py 在沙箱外直接跑;手动叫 Codex 做「1-复盘选片」前,先在终端跑 transcribe.sh", level="⚠️")
 else:
     ok = bool(which("claude"))
     add(G, "Claude Code 已安装", ok, "用户", "按 Anthropic 官方说明安装 Claude Code")

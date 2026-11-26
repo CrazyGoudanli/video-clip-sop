@@ -84,6 +84,19 @@ if drv == "Codex":
     # Codex 在沙箱里跑,看不到 GPU:本机转写(mlx_whisper)不能交给它。watch.py 会在启动 AI 前自己转写。
     add(G, "Codex 沙箱用不了 GPU(已由监测脚本先转写)", False, "AI",
         "知悉即可:转写由 watch.py 在沙箱外直接跑;手动叫 Codex 做「1-复盘选片」前,先在终端跑 transcribe.sh", level="⚠️")
+elif drv == "Cursor CLI":
+    ok = bool(which("cursor-agent") or which("agent"))
+    add(G, "Cursor CLI 已安装", ok, "AI", "`curl https://cursor.com/install -fsS | bash`(装好后命令是 cursor-agent)")
+    if ok:
+        code, out = run([which("cursor-agent") or which("agent"), "status"])
+        add(G, "Cursor CLI 已登录", code == 0 and "Logged in" in out, "用户", "在终端运行 `cursor-agent login` 并在浏览器里登录")
+elif drv == "Pi":
+    ok = bool(which("pi"))
+    add(G, "Pi coding agent 已安装", ok, "AI", "`npm install -g @earendil-works/pi-coding-agent`(需要 Node.js)")
+    if ok:
+        add(G, "Pi 已配置模型账号(只能真实跑一次确认)", False, "用户",
+            "在终端运行 `pi`,输入 /login 登录,或设置 ANTHROPIC_API_KEY / OPENAI_API_KEY 等环境变量", level="⚠️")
+    add(G, "Pi 看不到逐步过程", False, "AI", "知悉即可:Pi 只输出最后结果,工作台左下角看不到\"最近几步\"", level="⚠️")
 else:
     ok = bool(which("claude"))
     add(G, "Claude Code 已安装", ok, "用户", "按 Anthropic 官方说明安装 Claude Code")
@@ -92,7 +105,7 @@ else:
         add(G, "Claude Code 已登录", code == 0 and '"loggedIn": true' in out, "用户", "在终端运行 `claude` 按提示登录")
 dcmd = (CFG.get("驱动命令") or "").split(" ")[:2]
 add(G, "驱动命令已设置", bool(dcmd and dcmd[0]), "AI",
-    "按驱动AI 填:`zsh 3-工具/脚本/run_claude.sh {prompt}` 或 `zsh 3-工具/脚本/run_codex.sh {prompt}`", level="⚠️")
+    "按驱动AI 填:`zsh 3-工具/脚本/run_<claude|codex|cursor|pi>.sh {prompt}`", level="⚠️")
 
 # ---------- 剪辑:ChatCut ----------
 G = "剪辑 ChatCut"
@@ -107,6 +120,15 @@ if CFG.get("剪辑工具", "ChatCut") == "ChatCut":
         except Exception:
             linked = False
         fix = 'codex mcp add chatcut_desktop --env CHATCUT_MCP_CLIENT=codex_app -- "$HOME/Library/Application Support/ChatCut/chatcut-mcp"'
+    elif drv in ("Cursor CLI", "Pi"):
+        f = HOME / (".cursor/mcp.json" if drv == "Cursor CLI" else ".pi/agent/mcp.json")
+        try:
+            s = json.loads(f.read_text()).get("mcpServers", {}).get("chatcut_desktop")
+            # 旧写法把带空格的路径直接放进 command,Cursor 会启动失败,算未接入
+            linked = bool(s) and " " not in str(s.get("command", ""))
+        except Exception:
+            linked = False
+        fix = f"python3 3-工具/脚本/connect_chatcut.py {'cursor' if drv == 'Cursor CLI' else 'pi'}"
     else:
         try:
             linked = "chatcut_desktop" in json.loads((HOME / ".claude.json").read_text()).get("mcpServers", {})

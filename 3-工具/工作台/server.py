@@ -633,7 +633,9 @@ def upload_ref(a):
 # 左下角设置:只允许改这几项,值只能从列表里选
 SETTINGS = {
     "驱动AI": {"Claude Code": {"驱动命令": "zsh 3-工具/脚本/run_claude.sh {prompt}"},
-               "Codex": {"驱动命令": "zsh 3-工具/脚本/run_codex.sh {prompt}"}},
+               "Codex": {"驱动命令": "zsh 3-工具/脚本/run_codex.sh {prompt}"},
+               "Cursor CLI": {"驱动命令": "zsh 3-工具/脚本/run_cursor.sh {prompt}"},
+               "Pi": {"驱动命令": "zsh 3-工具/脚本/run_pi.sh {prompt}"}},
     "剪辑工具": {"ChatCut": {}, "ffmpeg": {}},
 }
 
@@ -642,8 +644,9 @@ def settings_options():
     import shutil
     os.environ["PATH"] = os.pathsep.join([str(Path.home() / ".local/bin"), "/opt/homebrew/bin", os.environ.get("PATH", "")])
     have = {"Claude Code": bool(shutil.which("claude")), "Codex": bool(shutil.which("codex")),
+            "Cursor CLI": bool(shutil.which("cursor-agent") or shutil.which("agent")), "Pi": bool(shutil.which("pi")),
             "ChatCut": Path("/Applications/ChatCut.app").exists(), "ffmpeg": bool(shutil.which("ffmpeg"))}
-    note = {"Claude Code": "推荐", "Codex": "", "ChatCut": "有标题栏、金句卡等动效包装", "ffmpeg": "免费,只做基础剪辑和字幕"}
+    note = {"Claude Code": "推荐", "Codex": "", "Cursor CLI": "用 Cursor 账号额度", "Pi": "开源,自带模型账号;看不到逐步过程", "ChatCut": "有标题栏、金句卡等动效包装", "ffmpeg": "免费,只做基础剪辑和字幕"}
     return {k: [{"值": v, "已安装": have.get(v, True), "说明": note.get(v, "")} for v in opts] for k, opts in SETTINGS.items()}
 
 
@@ -714,6 +717,16 @@ def _steps(logf, k=6):
                     name = c.get("name", "").replace("mcp__chatcut_desktop__", "ChatCut·")
                     desc = inp.get("description") or inp.get("command") or inp.get("file_path") or ""
                     out.append(("做", f"{name} {desc}".strip()))
+        if d.get("type") == "tool_call" and d.get("subtype") == "started":   # Cursor CLI
+            tc = d.get("tool_call") or {}
+            kind = next(iter(tc), "")
+            args = (tc.get(kind) or {}).get("args") or {}
+            if kind == "mcpToolCall":
+                name = str(args.get("name", "")).replace("chatcut_desktop-", "ChatCut·")
+                out.append(("做", name))
+            elif kind != "getMcpToolsToolCall":
+                desc = args.get("command") or args.get("path") or args.get("pattern") or ""
+                out.append(("做", f"{kind.replace('ToolCall', '')} {desc}".strip()))
         item = d.get("item") if isinstance(d.get("item"), dict) else None   # Codex
         if item:
             if item.get("type") == "agent_message":

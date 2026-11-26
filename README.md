@@ -53,7 +53,7 @@
 不要编造路径或账号，不代填密码，人工关卡（挑选 / 看片 / 授权发布 / 改标准）不要代做。
 ```
 
-> 目前只支持 Mac（Apple 芯片）。驱动 AI 支持 Claude Code（推荐）和 Codex。
+> 目前只支持 Mac（Apple 芯片）。驱动 AI 支持 Claude Code（推荐）、Codex、Cursor CLI 和 Pi coding agent。
 
 ---
 
@@ -162,7 +162,7 @@ zsh 3-工具/脚本/autorun.sh uninstall          # 卸掉上面两个
 | 能力 | 用什么 | 谁来装 |
 |---|---|---|
 | 电脑 | Mac（Apple 芯片） | — |
-| 驱动 AI | Claude Code（推荐）或 Codex | 你安装并登录 |
+| 驱动 AI | Claude Code（推荐）、Codex、Cursor CLI 或 Pi coding agent | 你安装并登录（Cursor CLI、Pi 可由 AI 安装） |
 | 剪辑 | ChatCut（必装） | 你安装并登录；接入 AI 由 AI 完成 |
 | 转写 | 本机 mlx_whisper（免费、不上传） | AI |
 | 基础工具 | ffmpeg、uv | AI |
@@ -212,7 +212,10 @@ data/
 
 - **换 AI**：改 `配置.json` 的 `驱动AI` / `驱动命令`  
   - Claude Code：`zsh 3-工具/脚本/run_claude.sh {prompt}`  
-  - Codex：`zsh 3-工具/脚本/run_codex.sh {prompt}`
+  - Codex：`zsh 3-工具/脚本/run_codex.sh {prompt}`  
+  - Cursor CLI：`zsh 3-工具/脚本/run_cursor.sh {prompt}`  
+  - Pi coding agent：`zsh 3-工具/脚本/run_pi.sh {prompt}`（只输出最终结果，工作台看不到逐步过程）
+  - 也可以直接在工作台左下角的「驱动 AI」里切换
 - **换剪辑**：改 `剪辑工具`，并保证有对应的 `3-工具/工具说明/剪辑_<名称>.md`
 - **开新平台**：在 `发布平台` 里加上名称，启用 `2-标准/平台规则.md` 对应段落，并补工具说明
 

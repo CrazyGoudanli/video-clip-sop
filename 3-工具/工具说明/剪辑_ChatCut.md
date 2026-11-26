@@ -8,6 +8,8 @@
 ChatCut 安装后自带工具接口程序:`~/Library/Application Support/ChatCut/chatcut-mcp`(先确认这个文件存在;不存在说明 ChatCut 没装好或没打开过,让用户打开一次 ChatCut 并登录)。
 - Claude Code:`claude mcp add -s user chatcut_desktop -e CHATCUT_MCP_CLIENT=claude_code -- "$HOME/Library/Application Support/ChatCut/chatcut-mcp"`
 - Codex:`codex mcp add chatcut_desktop --env CHATCUT_MCP_CLIENT=codex_app -- "$HOME/Library/Application Support/ChatCut/chatcut-mcp"`
+- Cursor CLI:`python3 3-工具/脚本/connect_chatcut.py cursor`(写入 `~/.cursor/mcp.json`)
+- Pi:`python3 3-工具/脚本/connect_chatcut.py pi`(写入 `~/.pi/agent/mcp.json`)
 - 已接入的不要重复添加;`python3 3-工具/check_env.py` 会显示是否已接入。
 
 ## 费用红线(最重要)
@@ -44,4 +46,4 @@ ChatCut 安装后自带工具接口程序:`~/Library/Application Support/ChatCut
 - **标题栏英文副标题不要超过约 28 个字符**,否则左右出框(2026-11-23 试跑出现)。自检抽帧时专门看这一行。
 - 精剪后时长可能低于 60 秒,要回补句子再导出(试跑第一版 48 秒)。
 - 结尾必须落在完整的金句上,不要留"第二个干嘛?"这类话说一半的句子。
-- 无人值守时:Claude Code 用 `3-工具/脚本/run_claude.sh`、Codex 用 `3-工具/脚本/run_codex.sh` 启动;两者都会开放 ChatCut 工作区目录。Claude Code 权限规则里的用户主目录绝对路径要写成 `//Users/<你的用户名>/...`(双斜杠前缀)。
+- 无人值守时:Claude Code 用 `3-工具/脚本/run_claude.sh`、Codex 用 `3-工具/脚本/run_codex.sh`、Cursor CLI 用 `run_cursor.sh`、Pi 用 `run_pi.sh` 启动;都会开放 ChatCut 工作区目录。Claude Code 权限规则里的用户主目录绝对路径要写成 `//Users/<你的用户名>/...`(双斜杠前缀)。

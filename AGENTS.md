@@ -75,7 +75,7 @@ python3 3-工具/工作台/server.py
   - `install-workbench` — KeepAlive 常驻工作台(端口 8765)
   - `uninstall` — 卸掉上面两个任务
   - `status` — 看是否已装、是否在跑、最近日志
-- 换 AI 只改 `驱动AI` 和 `驱动命令`:Claude Code 用 `zsh 3-工具/脚本/run_claude.sh {prompt}`,Codex 用 `zsh 3-工具/脚本/run_codex.sh {prompt}`。
+- 换 AI 只改 `驱动AI` 和 `驱动命令`:Claude Code 用 `zsh 3-工具/脚本/run_claude.sh {prompt}`,Codex 用 `zsh 3-工具/脚本/run_codex.sh {prompt}`,Cursor CLI 用 `zsh 3-工具/脚本/run_cursor.sh {prompt}`,Pi 用 `zsh 3-工具/脚本/run_pi.sh {prompt}`。Cursor CLI 和 Pi 接入 ChatCut:`python3 3-工具/脚本/connect_chatcut.py cursor|pi`。
 
 ## 其他
 - 本分享版不含业务数据库;用 `python3 3-工具/db.py init` 建空库。

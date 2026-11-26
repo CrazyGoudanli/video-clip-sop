@@ -10,7 +10,7 @@
 - 「1-复盘选片」开工前,转写由本脚本直接跑(固定命令,不需要 AI;也避开 Codex 沙箱用不了 GPU 的问题)。
 - 配置.json 里 自动执行=false 时,只提示不启动(默认,首次使用建议保持)。
 - 驱动命令是模板,{prompt} 会被替换成给 AI 的指令。例:
-    Claude Code: "claude -p {prompt}"
+    Claude Code: "zsh 3-工具/脚本/run_claude.sh {prompt}"(Codex / Cursor CLI / Pi 分别用 run_codex.sh / run_cursor.sh / run_pi.sh)
     Codex CLI:   "codex exec {prompt}"
     其他 AI:     任何能接收一段文字指令、在本项目目录里执行的命令行。
 

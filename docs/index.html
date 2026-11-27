@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>百搭剪辑 · 把录像扔进去，剩下的交给它</title>
+<meta name="description" content="百搭剪辑：开源的 AI 视频工作流。长录像自动转写、挑片段、剪辑、写文案、做封面、多平台定时发布，再用发布数据反过来优化自己。交给任何 AI Agent 都能跑，越用越像你。">
+<meta property="og:title" content="百搭剪辑 · 一个会长成你样子的 AI 剪辑团队">
+<meta property="og:description" content="长录像 → 切片 → 文案 → 封面 → 多平台定时发布 → 数据回流优化。开源免费，本地运行。">
+<meta name="theme-color" content="#0a0a0d">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0a0d'/%3E%3Cpath d='M18 16h18a10 10 0 0 1 0 20H18zM18 36h20a10 10 0 0 1 0 20H18z' fill='none' stroke='%23f5c04a' stroke-width='6'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a0a0d;--bg2:#121217;--card:#16161c;--line:#26262f;--line2:#33333d;
+  --tx:#f2f2f5;--tx2:#a9a9b6;--tx3:#6f6f7c;
+  --gold:#f5c04a;--gold2:#ffdf8a;--goldbg:rgba(245,192,74,.10);
+  --me:#7cc4ff;--mebg:rgba(124,196,255,.10);--ok:#5fd39a;
+  --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font:16px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+.gold{color:var(--gold)}
+.dim{color:var(--tx2)}
+section{padding:110px 0;position:relative;scroll-margin-top:40px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;letter-spacing:.12em;color:var(--gold);font-weight:600;margin-bottom:18px}
+.eyebrow::before{content:"";width:22px;height:2px;background:var(--gold);border-radius:2px}
+h2{font-size:clamp(30px,4.4vw,48px);line-height:1.2;font-weight:800;letter-spacing:-.01em;margin-bottom:18px}
+.lead{font-size:18px;color:var(--tx2);max-width:680px}
+
+/* 导航 */
+nav{position:sticky;top:0;z-index:50;background:rgba(10,10,13,.72);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid rgba(255,255,255,.05)}
+nav .wrap{display:flex;align-items:center;height:64px;gap:28px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:.02em}
+.logo svg{width:28px;height:28px}
+nav .links{display:flex;gap:26px;margin-left:auto;font-size:14px;color:var(--tx2)}
+nav .links a:hover{color:var(--tx)}
+.gh{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border:1px solid var(--line2);border-radius:999px;font-size:14px}
+.gh:hover{border-color:var(--gold);color:var(--gold)}
+.gh svg{width:16px;height:16px;fill:currentColor}
+
+/* 首屏 */
+.hero{padding:84px 0 96px;overflow:hidden;position:relative}
+.hero::before{content:"";position:absolute;inset:-200px -200px auto auto;width:760px;height:760px;background:radial-gradient(closest-side,rgba(245,192,74,.16),transparent 70%);pointer-events:none}
+.hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.tag{display:inline-flex;gap:8px;align-items:center;padding:6px 14px;border-radius:999px;background:var(--goldbg);border:1px solid rgba(245,192,74,.25);color:var(--gold2);font-size:13px;margin-bottom:26px}
+.tag i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(95,211,154,.18);font-style:normal}
+h1{font-size:clamp(40px,6vw,68px);line-height:1.12;font-weight:900;letter-spacing:-.02em;margin-bottom:22px}
+h1 .gold{background:linear-gradient(100deg,var(--gold),var(--gold2) 60%,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.sub{font-size:19px;color:var(--tx2);margin-bottom:34px;max-width:560px}
+.hero p.sub b{color:var(--tx);font-weight:600}
+
+.copybox{background:var(--card);border:1px solid var(--line2);border-radius:var(--r);padding:16px 16px 16px 20px;display:flex;gap:16px;align-items:center;max-width:600px;box-shadow:0 20px 60px -30px rgba(245,192,74,.35)}
+.copybox .txt{flex:1;font-size:14px;color:var(--tx2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.copybox .txt b{color:var(--tx);font-weight:500}
+.btn{flex:none;display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:12px;background:var(--gold);color:#1a1405;font-weight:700;font-size:15px;border:0;cursor:pointer;transition:transform .15s,background .2s}
+.btn:hover{background:var(--gold2);transform:translateY(-1px)}
+.btn svg{width:17px;height:17px}
+.btn.done{background:var(--ok)}
+.hint{font-size:13px;color:var(--tx3);margin-top:12px}
+.agents{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px;align-items:center;font-size:13px;color:var(--tx3)}
+.agents span.a{padding:4px 11px;border-radius:8px;background:var(--bg2);border:1px solid var(--line);color:var(--tx2)}
+
+/* 首屏动画:迷你工作台 */
+.demo{background:linear-gradient(180deg,#17171e,#111116);border:1px solid var(--line2);border-radius:20px;box-shadow:0 40px 100px -40px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.02) inset;overflow:hidden}
+.demo .bar{display:flex;align-items:center;gap:7px;padding:13px 16px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--tx3)}
+.demo .bar i{width:11px;height:11px;border-radius:50%;background:#3a3a44}
+.demo .bar i:nth-child(1){background:#ff5f57}.demo .bar i:nth-child(2){background:#febc2e}.demo .bar i:nth-child(3){background:#28c840}
+.demo .bar span{margin-left:10px}
+.demo .file{margin:16px 16px 6px;display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--bg2);border:1px dashed var(--line2);border-radius:12px;font-size:13.5px;transition:all .4s}
+.demo .file .ic{width:34px;height:34px;border-radius:9px;background:var(--goldbg);display:grid;place-items:center;font-size:17px}
+.demo .file small{display:block;color:var(--tx3);font-size:12px}
+.demo .file.in{border-style:solid;border-color:rgba(245,192,74,.45)}
+.steps{list-style:none;padding:8px 16px 4px}
+.steps li{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;font-size:14px;color:var(--tx3);transition:all .35s}
+.steps li .n{font-size:15px;text-align:center;filter:grayscale(1);opacity:.55;transition:all .35s}
+.steps li .who{font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid var(--line);color:var(--tx3)}
+.steps li.me .who{color:var(--me);border-color:rgba(124,196,255,.3)}
+.steps li .st{font-size:12px;min-width:64px;text-align:right;color:var(--tx3)}
+.steps li.run{background:var(--goldbg);color:var(--tx)}
+.steps li.run .n{filter:none;opacity:1}
+.steps li.run .st{color:var(--gold)}
+.steps li.ok{color:var(--tx2)}
+.steps li.ok .n{filter:none;opacity:.9}
+.steps li.ok .st{color:var(--ok)}
+.steps li.me.run{background:var(--mebg)}
+.steps li.me.run .st{color:var(--me)}
+.plats{display:flex;gap:8px;padding:10px 16px 16px;flex-wrap:wrap}
+.plats span{font-size:12px;padding:5px 10px;border-radius:8px;background:var(--bg2);border:1px solid var(--line);color:var(--tx3);transition:all .4s}
+.plats span.on{color:#0d1a12;background:var(--ok);border-color:var(--ok);font-weight:600}
+.demo .log{border-top:1px solid var(--line);padding:11px 16px;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--tx3);min-height:42px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.demo .log b{color:var(--gold);font-weight:500}
+
+/* 名字 */
+.name{padding:0 0 30px}
+.name .wrap{display:flex;gap:14px;align-items:center;justify-content:center;color:var(--tx3);font-size:14px;flex-wrap:wrap;text-align:center}
+.name b{color:var(--tx2);font-weight:600}
+
+/* ===== 通用:演示里的光标、封面、手机 ===== */
+.cursor{position:absolute;left:0;top:0;width:24px;height:24px;z-index:20;pointer-events:none;opacity:0;transform:translate(85%,85%);transition:transform .6s cubic-bezier(.4,0,.2,1),opacity .3s}
+.cursor.show{opacity:1}
+.cursor svg{width:24px;height:24px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+.cursor::after{content:"";position:absolute;left:-8px;top:-8px;width:20px;height:20px;border-radius:50%;border:2px solid var(--gold);opacity:0}
+.cursor.down::after{animation:ripple .45s ease-out}
+@keyframes ripple{from{opacity:1;transform:scale(.4)}to{opacity:0;transform:scale(1.8)}}
+.cov{position:relative;aspect-ratio:3/4;border-radius:8px;overflow:hidden;background:radial-gradient(circle at 72% 28%,#3b2c0b,#0e0e13 62%);border:1px solid #2c2c36;display:flex;flex-direction:column;justify-content:flex-end;padding:9%;font-size:12px}
+.cov b{position:relative;z-index:1;font-weight:900;color:#fff;line-height:1.15;font-size:1.15em;letter-spacing:-.01em}
+.cov b em{font-style:normal;color:var(--gold)}
+.cov .shp{position:absolute;top:11%;right:11%;width:44%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 34% 30%,#fff1c2,#f5c04a 42%,#7a4f00);box-shadow:0 10px 26px rgba(245,192,74,.35)}
+.cov .shp.cube{border-radius:18%;transform:rotate(14deg);background:linear-gradient(140deg,#ffe8a6,#f5c04a 45%,#8a5a00)}
+.cov .shp.ring{background:none;border:7px solid var(--gold);box-shadow:0 0 20px rgba(245,192,74,.4),inset 0 0 14px rgba(245,192,74,.4)}
+.cov .shp.bars{border-radius:4px;background:linear-gradient(90deg,var(--gold) 0 22%,transparent 22% 39%,#c99528 39% 61%,transparent 61% 78%,#8a5a00 78%);clip-path:polygon(0 60%,22% 60%,22% 30%,39% 30%,39% 30%,61% 30%,61% 0,78% 0,78% 100%,0 100%)}
+.phone{position:relative;aspect-ratio:9/16;border-radius:12px;overflow:hidden;background:linear-gradient(165deg,#2a2a36,#111117 70%);border:1px solid var(--line2)}
+.phone .pt{position:absolute;top:9%;left:6%;right:6%;background:var(--gold);color:#1a1405;font-weight:800;font-size:9.5px;white-space:nowrap;overflow:hidden;line-height:1.3;padding:4px 6px;border-radius:4px;text-align:center}
+.phone .blob{position:absolute;left:50%;top:44%;width:46%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 40% 35%,#4a4a5a,#22222b);opacity:.9}
+.phone .blob::after{content:"";position:absolute;left:50%;top:100%;width:150%;height:70%;transform:translateX(-50%);border-radius:50% 50% 0 0;background:#2a2a35}
+.phone .sb{position:absolute;bottom:14%;left:8%;right:8%;text-align:center;font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000}
+.phone .pb{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.08)}
+.phone .pb i{display:block;height:100%;width:0;background:var(--gold)}
+.dtag{position:absolute;top:12px;right:14px;font-size:11px;color:var(--tx3);border:1px solid var(--line);border-radius:6px;padding:1px 7px;z-index:5}
+
+/* ===== 它能做什么:四段可视化 ===== */
+.feat{display:grid;grid-template-columns:1fr 1.15fr;gap:60px;align-items:center;margin-top:80px}
+.feat.rev .ftxt{order:2}
+.ftxt .fno{font:700 13px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--gold);letter-spacing:.12em;margin-bottom:12px}
+.ftxt h3{font-size:clamp(24px,2.8vw,31px);line-height:1.35;margin-bottom:14px;font-weight:800}
+.ftxt p{color:var(--tx2);font-size:16px}
+.pts{list-style:none;margin-top:18px;display:flex;flex-direction:column;gap:8px}
+.pts li{font-size:14.5px;color:var(--tx2);padding-left:24px;position:relative}
+.pts li::before{content:"✓";position:absolute;left:0;color:var(--gold);font-weight:700}
+.fvis{position:relative;background:linear-gradient(180deg,#17171e,#111116);border:1px solid var(--line2);border-radius:20px;padding:42px 26px 26px;min-height:350px;overflow:hidden;box-shadow:0 30px 80px -40px rgba(0,0,0,.8)}
+.fvis .cap{font-size:12.5px;color:var(--tx3);margin-bottom:8px}
+
+/* A 全自动 */
+.tl{position:relative;height:58px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:24px}
+.wave{position:absolute;inset:9px 10px;display:flex;align-items:center;gap:2px}
+.wave i{flex:1;background:#3a3a46;border-radius:2px}
+.sg{position:absolute;top:0;bottom:0;border:2px solid transparent;border-radius:6px;transition:all .5s}
+.g1{left:15%;width:9%}.g2{left:46%;width:11%}.g3{left:75%;width:8%}
+.scA.s2 .sg{background:rgba(245,192,74,.26);border-color:var(--gold)}
+.scan{position:absolute;top:0;bottom:0;left:0;width:2px;background:var(--gold);box-shadow:0 0 12px var(--gold);opacity:0}
+.scA.s1 .scan{opacity:1;animation:scan 1.5s linear forwards}
+.scA.s2 .scan{opacity:0}
+@keyframes scan{to{left:100%}}
+.scA .phones{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:300px;margin:0 auto 22px}
+.scA .phone{opacity:0;transform:translateY(-40px) scale(.5);transition:all .6s cubic-bezier(.2,.8,.2,1.15)}
+.scA .phone:nth-child(2){transition-delay:.12s}.scA .phone:nth-child(3){transition-delay:.24s}
+.scA.s3 .phone{opacity:1;transform:none}
+.scA.s3 .phone .pb i{animation:fill 2.4s .6s linear forwards}
+@keyframes fill{to{width:100%}}
+.pl{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.pl span{font-size:12px;padding:5px 11px;border-radius:8px;background:var(--bg2);border:1px solid var(--line);color:var(--tx3);transition:all .35s}
+.scA.s4 .pl span{background:var(--ok);border-color:var(--ok);color:#0d1a12;font-weight:600}
+.scA.s4 .pl span:nth-child(2){transition-delay:.12s}.scA.s4 .pl span:nth-child(3){transition-delay:.24s}.scA.s4 .pl span:nth-child(4){transition-delay:.36s}.scA.s4 .pl span:nth-child(5){transition-delay:.48s}
+.pl em{width:100%;text-align:center;font-style:normal;font-size:12.5px;color:var(--ok);opacity:0;transition:opacity .4s .6s;margin-top:4px}
+.scA.s4 .pl em{opacity:1}
+
+/* B 自我迭代 */
+.scB .bgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cand{background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:14px;transition:opacity .4s}
+.cand .ct{font-weight:600;font-size:14px;line-height:1.5}
+.cand .cm{font-size:12px;color:var(--tx3);margin:4px 0 12px}
+.cb{display:flex;gap:8px}
+.cb span{flex:1;text-align:center;padding:6px;border-radius:8px;border:1px solid var(--line2);background:var(--bg2);color:var(--tx2);font-size:13px;transition:all .2s}
+.cb .no.tapped{background:rgba(255,95,87,.16);border-color:#ff5f57;color:#ff9a94}
+.scB.s2 .cand{opacity:.5}
+.note{margin-top:12px;font-size:13px;line-height:1.6;background:var(--mebg);border:1px solid rgba(124,196,255,.3);color:#d4ebff;border-radius:10px;padding:10px 12px;opacity:0;transform:translateY(8px);transition:all .4s}
+.scB.s2 .note{opacity:1;transform:none}
+.pref,.std{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px}
+.pref{margin-bottom:12px}
+.pref b,.std b{display:block;font-size:12.5px;color:var(--tx2);margin-bottom:6px}
+.pr{display:flex;justify-content:space-between;padding:3px 0;color:var(--tx3)}
+.pr em{font-style:normal;color:var(--gold);font-weight:700}
+.scB.s3 .pr.hot{color:var(--tx)}
+.scB.s3 .pr.hot em{animation:bump .4s}
+@keyframes bump{50%{transform:scale(1.6)}}
+.std .ln{color:var(--tx3);padding:2px 0}
+.std .ln.new{color:var(--gold);font-weight:600;max-height:0;opacity:0;overflow:hidden;transition:all .5s}
+.scB.s4 .std .ln.new{max-height:40px;opacity:1}
+.std .ok{font-size:11.5px;color:var(--tx3);margin-top:6px;opacity:0;transition:opacity .4s .4s}
+.scB.s4 .std .ok{opacity:1}
+
+/* C 学习能力 */
+.scC .cgrid{display:grid;grid-template-columns:1.15fr auto 1fr;gap:16px;align-items:center}
+.refs{background:var(--bg2);border:1px dashed var(--line2);border-radius:12px;padding:12px;transition:border-color .4s}
+.refs .fd{font-size:12px;color:var(--tx3);margin-bottom:10px}
+.refs .rg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.refs .cov{font-size:9px;opacity:0;transform:translateY(-26px) rotate(-8deg);transition:all .5s cubic-bezier(.2,.8,.2,1.1)}
+.refs .cov:nth-child(2){transition-delay:.15s}.refs .cov:nth-child(3){transition-delay:.3s}
+.scC.s1 .refs{border-color:rgba(245,192,74,.5)}
+.scC.s1 .refs .cov{opacity:1;transform:none}
+.arw{font-size:24px;color:var(--gold);opacity:.2;transition:opacity .4s}
+.scC.s2 .arw{opacity:1}
+.prof{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:12.5px;margin-bottom:12px}
+.prof b{display:block;color:var(--tx2);margin-bottom:4px}
+.chip{display:inline-block;margin:5px 4px 0 0;padding:2px 9px;border-radius:999px;background:var(--goldbg);color:var(--gold2);font-size:11.5px;opacity:0;transform:scale(.7);transition:all .3s}
+.scC.s2 .chip{opacity:1;transform:none}
+.scC.s2 .chip:nth-of-type(2){transition-delay:.2s}.scC.s2 .chip:nth-of-type(3){transition-delay:.4s}.scC.s2 .chip:nth-of-type(4){transition-delay:.6s}
+.gen{text-align:center}
+.gen .cov{width:62%;margin:0 auto;font-size:14px;opacity:0;filter:blur(12px);transform:scale(.9);transition:all .8s}
+.scC.s3 .gen .cov{opacity:1;filter:none;transform:none;box-shadow:0 0 0 2px var(--gold),0 16px 40px -10px rgba(245,192,74,.5)}
+.gen small{display:block;margin-top:8px;font-size:12px;color:var(--tx3);opacity:0;transition:opacity .4s .5s}
+.scC.s3 .gen small{opacity:1;color:var(--gold)}
+
+/* D 数据 */
+.scD .dgrid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;align-items:start}
+.vr{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:8px 12px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;color:var(--tx2)}
+.vr .vn{color:var(--tx);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bars{margin-top:14px;font-size:12.5px;color:var(--tx2)}
+.br{display:grid;grid-template-columns:70px 1fr 36px;align-items:center;gap:8px;margin:8px 0}
+.br i{display:block;height:12px;border-radius:6px;background:var(--gold);width:0;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.br.lo i{background:#55555f}
+.br b{font-weight:600;color:var(--tx)}
+.scD.s2 .br i{width:var(--w)}
+.prop{background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:14px;font-size:13px;opacity:0;transform:translateY(10px);transition:all .45s}
+.scD.s3 .prop{opacity:1;transform:none}
+.prop b{display:block;color:var(--gold);margin-bottom:6px}
+.prop p{color:var(--tx2);line-height:1.6;margin-bottom:12px}
+.prop .cb .yes.tapped{background:var(--ok);border-color:var(--ok);color:#0d1a12;font-weight:600}
+.ver{margin-top:12px;font-size:13px;color:var(--ok);text-align:center;opacity:0;transition:opacity .4s}
+.scD.s5 .ver{opacity:1}
+
+/* ===== 你能拿到什么 ===== */
+.ba{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;margin-top:48px}
+.before,.after{border-radius:20px;padding:26px 28px;border:1px solid var(--line2)}
+.before{background:var(--bg2)}
+.after{background:linear-gradient(180deg,rgba(245,192,74,.08),var(--card));border-color:rgba(245,192,74,.3);display:flex;flex-direction:column}
+.bah{font-size:14px;font-weight:700;color:var(--tx2);margin-bottom:16px;letter-spacing:.04em}
+.after .bah{color:var(--gold)}
+.chores{list-style:none;counter-reset:c;display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
+.chores li{counter-increment:c;position:relative;padding:8px 10px 8px 34px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:14px;color:var(--tx);transition:color .4s var(--d),background .4s var(--d),border-color .4s var(--d)}
+.chores li::before{content:counter(c);position:absolute;left:10px;top:50%;transform:translateY(-50%);width:17px;height:17px;border-radius:50%;background:#2b2b35;color:var(--tx3);font-size:10.5px;display:grid;place-items:center;font-weight:700;transition:all .4s var(--d)}
+.chores li::after{content:"";position:absolute;left:34px;right:10px;top:50%;height:1.5px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .45s var(--d)}
+.scE.s1 .chores li{color:var(--tx3);background:transparent;border-color:transparent}
+.scE.s1 .chores li::after{transform:scaleX(1)}
+.scE.s1 .chores li::before{content:"✓";background:var(--goldbg);color:var(--gold)}
+.taps{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1}
+.tp{border-radius:14px;background:var(--card);border:1px solid var(--line2);padding:16px;display:flex;flex-direction:column;gap:2px;opacity:.35;transform:scale(.96);transition:all .45s var(--d)}
+.tp span{font-size:24px;margin-bottom:6px}
+.tp b{font-size:17px}
+.tp small{font-size:12.5px;color:var(--tx3)}
+.scE.s1 .tp{opacity:1;transform:none;border-color:rgba(124,196,255,.45);box-shadow:0 10px 30px -18px rgba(124,196,255,.6)}
+.aih{margin-top:16px;text-align:center;font-size:14px;color:var(--ok);opacity:0;transition:opacity .5s 3.1s}
+.scE.s1 .aih{opacity:1}
+.geth{font-size:clamp(22px,2.6vw,28px);font-weight:800;margin:76px 0 24px}
+.deliv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.dv{min-width:0}
+.dv{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 16px 20px;transition:border-color .25s,transform .25s}
+.dv:hover{border-color:rgba(245,192,74,.4);transform:translateY(-3px)}
+.dvv{height:190px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);margin-bottom:16px;display:flex;align-items:center;justify-content:center;padding:14px;overflow:hidden}
+.dv>b{display:block;font-size:16.5px;margin-bottom:6px}
+.dv>p{font-size:13.5px;color:var(--tx2)}
+.mini3{display:flex;gap:6px;height:100%;justify-content:center;min-width:0}
+.mini3 .phone{height:100%;width:auto;flex:0 1 auto;aspect-ratio:9/16}
+.mini3 .phone .pt{font-size:7.5px;padding:3px 4px}
+.mini3 .phone .sb{font-size:7.5px}
+.covs{display:flex;gap:8px;align-items:center;justify-content:center;height:100%;min-width:0}
+.covs .cov{height:100%;font-size:10px;flex:none}
+.covs .cov.h{height:auto;width:52%;flex:none;aspect-ratio:16/9;font-size:11px}
+.covs .cov.h .shp{width:30%;top:12%;right:7%}
+.cps{width:100%;min-width:0;display:flex;flex-direction:column;gap:6px;font-size:11.5px;color:var(--tx)}
+.cps div{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cps i{font-style:normal;color:var(--gold);font-weight:700;margin-right:6px;font-size:11px}
+.sch{width:100%;display:flex;flex-direction:column;gap:7px;font-size:12.5px}
+.sch div{display:flex;justify-content:space-between;background:var(--card);border:1px solid rgba(95,211,154,.3);border-radius:8px;padding:8px 10px}
+.sch em{font-style:normal;color:var(--ok);font-weight:600}
+@media (max-width:1000px){
+  .ba{grid-template-columns:1fr}
+  .deliv{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:600px){
+  .chores{grid-template-columns:1fr}
+  .deliv{grid-template-columns:1fr}
+  .before,.after{padding:20px 16px}
+}
+
+/* ===== 怎么跑:模拟工作台 ===== */
+.sim{position:relative;margin-top:44px;background:linear-gradient(180deg,#17171e,#0f0f14);border:1px solid var(--line2);border-radius:22px;overflow:hidden;box-shadow:0 40px 100px -50px rgba(0,0,0,.9)}
+.simbar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px;color:var(--tx3);flex-wrap:wrap}
+.simbar .dots{display:flex;gap:6px}.simbar .dots i{width:11px;height:11px;border-radius:50%;background:#ff5f57}.simbar .dots i:nth-child(2){background:#febc2e}.simbar .dots i:nth-child(3){background:#28c840}
+.simbar .ctl{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sbtn{padding:5px 12px;border-radius:8px;border:1px solid var(--line2);background:var(--bg2);color:var(--tx2);font-size:13px;cursor:pointer;font-family:inherit}
+.sbtn:hover{border-color:var(--gold);color:var(--gold)}
+.toggle{display:flex;align-items:center;gap:12px;font-size:14.5px;color:var(--tx2);cursor:pointer;user-select:none}
+.toggle .sw{width:50px;height:28px;border-radius:999px;background:#2b2b35;position:relative;transition:background .25s;flex:none}
+.toggle .sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .25s}
+.toggle.on .sw{background:var(--gold)}
+.toggle.on .sw::after{transform:translateX(22px)}
+.toggle.sm{font-size:13px;gap:8px}
+.toggle.sm .sw{width:40px;height:22px}
+.toggle.sm .sw::after{width:16px;height:16px}
+.toggle.sm.on .sw::after{transform:translateX(18px)}
+.rail{display:grid;grid-template-columns:repeat(12,minmax(70px,1fr));gap:6px;padding:14px 16px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.rc{position:relative;border-radius:10px;padding:10px 4px 8px;text-align:center;border:1px solid var(--line);background:var(--card);cursor:pointer;transition:all .3s;font-size:12px;color:var(--tx3)}
+.rc .e{font-size:18px;display:block;filter:grayscale(1);opacity:.45;transition:all .3s}
+.rc .n{display:block;font-weight:600;margin-top:4px;white-space:nowrap}
+.rc .w{display:block;font-size:10.5px;margin-top:2px;color:var(--tx3)}
+.rc.me .w{color:var(--me)}
+.rc.me.aion .w{color:var(--gold)}
+.rc.done{color:var(--tx2)}
+.rc.done .e{filter:none;opacity:.85}
+.rc.done::after{content:"✓";position:absolute;top:3px;right:6px;font-size:10px;color:var(--ok)}
+.rc.cur{border-color:var(--gold);background:var(--goldbg);color:var(--tx);transform:translateY(-2px);box-shadow:0 8px 20px -10px rgba(245,192,74,.6)}
+.rc.cur .e{filter:none;opacity:1}
+.rc.cur.me:not(.aion){border-color:var(--me);background:var(--mebg);box-shadow:0 8px 20px -10px rgba(124,196,255,.6)}
+.stage{position:relative;padding:22px 26px 28px;min-height:440px}
+.say{display:flex;align-items:center;gap:10px;font-size:15.5px;margin-bottom:18px;min-height:30px;color:var(--tx)}
+.say .who{font-size:12px;padding:3px 10px;border-radius:6px;background:var(--goldbg);color:var(--gold);font-weight:700;flex:none}
+.say.me .who{background:var(--mebg);color:var(--me)}
+.screen{min-height:340px;display:flex;align-items:center;justify-content:center}
+.screen>*{animation:pop .45s ease both}
+@keyframes pop{from{opacity:0;transform:translateY(12px)}}
+.sprog{height:3px;background:var(--line)}
+.sprog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .5s}
+.stage.aimode .who{background:var(--goldbg)!important;color:var(--gold)!important}
+
+.sbody{display:grid;grid-template-columns:minmax(0,1fr) 0;gap:0;transition:grid-template-columns .5s ease,gap .5s ease}
+.stage.withcap .sbody{grid-template-columns:minmax(0,1fr) 310px;gap:22px}
+.capw{min-width:0;overflow:hidden;display:flex;align-items:center}
+.capc{width:310px;flex:none;background:linear-gradient(180deg,rgba(245,192,74,.13),var(--card) 70%);border:1px solid rgba(245,192,74,.5);border-radius:16px;padding:18px 18px 20px;animation:capin .55s ease both;box-shadow:0 24px 60px -28px rgba(245,192,74,.6)}
+@keyframes capin{from{opacity:0;transform:translateX(40px)}}
+.ctag{display:inline-block;font-size:12px;font-weight:800;color:#1a1405;background:var(--gold);border-radius:6px;padding:2px 9px;margin-bottom:10px}
+.capc h4{font-size:18px;margin-bottom:6px;line-height:1.4}
+.capc p{font-size:13.5px;color:var(--tx2);line-height:1.7}
+.capc .mx{margin-top:12px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px}
+.capc .mx .r{display:flex;justify-content:space-between;color:var(--tx2);padding:2px 0}
+.capc .mx .r em{font-style:normal;color:var(--gold);font-weight:700}
+.capc .mx .nw{color:var(--gold);font-weight:700}
+.capc .mx .r+.nw{margin-top:6px}
+.capc .refs3{display:flex;gap:6px;margin-top:12px}
+.capc .refs3 .cov{flex:1;font-size:8px}
+.capc .chips{margin-top:8px}
+.capc .chip{opacity:1;transform:none}
+.capc .cb{margin-top:12px}
+.capc .cb .yes.tapped{background:var(--ok);border-color:var(--ok);color:#0d1a12;font-weight:600}
+.capc .done{margin-top:10px;color:var(--ok);font-size:13px;display:none}
+.capc.ok .done{display:block}
+.dat.one{grid-template-columns:1fr;width:min(540px,100%)}
+@media (max-width:1000px){
+  .sbody,.stage.withcap .sbody{grid-template-columns:1fr;gap:16px}
+  .capc{width:100%}
+}
+
+/* 各步画面 */
+.drop{display:flex;gap:46px;align-items:center}
+.fz{width:190px;height:140px;border-radius:16px;border:2px dashed var(--line2);display:grid;place-items:center;color:var(--tx3);font-size:14px;text-align:center;transition:all .4s;padding:10px}
+.fz.got{border-color:var(--gold);color:var(--gold);background:var(--goldbg)}
+.fly{padding:14px 18px;border-radius:12px;background:var(--card);border:1px solid var(--line2);font-size:14px;transition:transform .9s cubic-bezier(.5,0,.3,1),opacity .9s}
+.fly small{display:block;color:var(--tx3);font-size:12px;margin-top:2px}
+.fly.in{transform:translate(-230px,0) scale(.5);opacity:0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:12px 30px;font-size:15px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 30px;min-width:380px}
+.kv dt{color:var(--tx3)}
+.kv dd{color:var(--tx)}
+.kv>*{animation:pop .4s both}
+.kv .okc{color:var(--ok)}
+.ts{width:min(580px,100%);height:270px;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:14px;position:relative;font:13px/2 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ts .in{padding:14px 18px;animation:roll 3.6s linear forwards}
+@keyframes roll{to{transform:translateY(-42%)}}
+.ts p{color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts p span{color:#55555f;margin-right:8px}
+.ts p.hl{color:var(--tx);background:var(--goldbg);border-left:2px solid var(--gold);padding-left:8px;border-radius:0 6px 6px 0}
+.ts .cnt{position:absolute;bottom:0;left:0;right:0;padding:26px 18px 12px;background:linear-gradient(transparent,#16161c 45%);color:var(--gold);font-size:13px;opacity:0;transition:opacity .4s}
+.ts .cnt.on{opacity:1}
+.cl{width:min(640px,100%);display:flex;flex-direction:column;gap:7px}
+.ci{display:grid;grid-template-columns:20px 1fr auto auto;gap:12px;align-items:center;padding:9px 14px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:14px;transition:all .3s}
+.ci .bx{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line2);display:grid;place-items:center;font-size:12px;font-weight:800;color:#071423}
+.ci .tm{color:var(--tx3);font-size:12px;white-space:nowrap}
+.ci .st{color:var(--gold);font-size:11px;letter-spacing:1px;white-space:nowrap}
+.ci.on{border-color:rgba(124,196,255,.5);background:var(--mebg)}
+.ci.on .bx{background:var(--me);border-color:var(--me)}
+.ci.on .bx::after{content:"✓"}
+.stage.aimode .ci.on{border-color:rgba(245,192,74,.5);background:var(--goldbg)}
+.stage.aimode .ci.on .bx{background:var(--gold);border-color:var(--gold);color:#1a1405}
+.go{align-self:flex-end;margin-top:6px;padding:9px 20px;border-radius:10px;background:var(--me);color:#071423;font-weight:700;font-size:14px;transition:transform .15s}
+.stage.aimode .go{background:var(--gold);color:#1a1405}
+.go.tapped{transform:scale(.93)}
+.ph3{display:flex;gap:26px;align-items:flex-end}
+.ph3 .item{width:128px;text-align:center;font-size:12px;color:var(--tx3)}
+.ph3 .phone{margin-bottom:10px}
+.ph3 .phone .pb i{animation:fill 3s linear forwards}
+.ph3 .item:nth-child(2) .pb i{animation-delay:.3s}.ph3 .item:nth-child(3) .pb i{animation-delay:.6s}
+.revw{display:flex;gap:36px;align-items:center}
+.revw .phone{width:160px}
+.revw .phone .pt{font-size:11.5px}
+.revw .phone .sb{font-size:11.5px}
+.revw .phone .sb span{position:absolute;left:0;right:0;opacity:0;animation:subs 3.6s infinite}
+.revw .phone .sb span:nth-child(2){animation-delay:1.2s}.revw .phone .sb span:nth-child(3){animation-delay:2.4s}
+@keyframes subs{0%,4%{opacity:0}8%,30%{opacity:1}34%,100%{opacity:0}}
+.revw .phone .pb i{animation:fill 3.8s linear forwards}
+.rbox{display:flex;flex-direction:column;gap:10px;min-width:200px}
+.rbox .meta{font-size:13px;color:var(--tx3);line-height:1.8}
+.rbox .meta b{color:var(--tx);font-weight:600}
+.rbtn{padding:10px 14px;border-radius:10px;text-align:center;font-weight:700;font-size:14px;border:1px solid var(--line2);color:var(--tx2);transition:all .2s}
+.rbtn.pass{background:var(--me);border-color:var(--me);color:#071423}
+.stage.aimode .rbtn.pass{background:var(--gold);border-color:var(--gold);color:#1a1405}
+.rbtn.tapped{transform:scale(.94);box-shadow:0 0 0 4px rgba(124,196,255,.25)}
+.cp{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(640px,100%)}
+.cc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:13px;animation:pop .45s both}
+.cc:nth-child(2){animation-delay:.35s}.cc:nth-child(3){animation-delay:.7s}.cc:nth-child(4){animation-delay:1.05s}
+.cc b{display:block;font-size:12px;color:var(--gold);margin-bottom:6px}
+.cc .t{color:var(--tx);font-weight:600;font-size:14px;line-height:1.5}
+.cc .d{color:var(--tx3);font-size:12px;margin-top:6px}
+.cv3{display:flex;gap:22px}
+.cv3 .cw{width:150px;text-align:center;font-size:12px;color:var(--tx3)}
+.cv3 .cov{font-size:15px;margin-bottom:8px;transition:box-shadow .3s,transform .3s}
+.cv3 .cov.mk::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,#16161c 30%,#25252f 50%,#16161c 70%);background-size:300% 100%;animation:shim 1.1s linear infinite}
+@keyframes shim{from{background-position:100% 0}to{background-position:-100% 0}}
+.cv3 .cov.picked{box-shadow:0 0 0 3px var(--me),0 16px 40px -12px rgba(124,196,255,.6);transform:translateY(-4px)}
+.stage.aimode .cv3 .cov.picked{box-shadow:0 0 0 3px var(--gold),0 16px 40px -12px rgba(245,192,74,.6)}
+.cv3 .pk{opacity:0;color:var(--me);font-weight:700;transition:opacity .3s}
+.stage.aimode .cv3 .pk{color:var(--gold)}
+.cv3 .cw.sel .pk{opacity:1}
+.pubc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px;width:min(460px,100%);font-size:14px}
+.pubc h4{font-size:15px;margin-bottom:12px}
+.prow{display:grid;grid-template-columns:20px 1fr auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.prow .bx{width:18px;height:18px;border-radius:5px;background:var(--me);display:grid;place-items:center;font-size:12px;font-weight:800;color:#071423}
+.stage.aimode .prow .bx{background:var(--gold);color:#1a1405}
+.prow .bx::after{content:"✓"}
+.prow .tm{color:var(--tx2);font-size:13px}
+.pubc .nt{font-size:12px;color:var(--tx3);margin:12px 0}
+.pubc .go{display:block;text-align:center;margin:0}
+.sched{width:min(500px,100%);display:flex;flex-direction:column;gap:9px}
+.srow{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:14px}
+.srow .stt{font-size:13px;color:var(--tx3);transition:color .3s}
+.srow.ok{border-color:rgba(95,211,154,.35)}
+.srow.ok .stt{color:var(--ok);font-weight:600}
+.sched .nt{text-align:center;font-size:12.5px;color:var(--tx3);margin-top:6px}
+.dat{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;width:min(700px,100%);align-items:stretch}
+.chart{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;font-size:12px;color:var(--tx3)}
+.chart .cb2{display:flex;gap:18px;align-items:flex-end;height:150px;margin:12px 0 8px;border-bottom:1px solid var(--line2)}
+.chart .grp{flex:1;display:flex;gap:4px;align-items:flex-end;height:100%}
+.chart .grp i{flex:1;border-radius:4px 4px 0 0;height:0;animation:grow 1s cubic-bezier(.2,.8,.2,1) forwards}
+.chart .grp i:nth-child(1){background:#5a4a1c}.chart .grp i:nth-child(2){background:#a07a24;animation-delay:.25s}.chart .grp i:nth-child(3){background:var(--gold);animation-delay:.5s}
+@keyframes grow{to{height:var(--h)}}
+.chart .lb{display:flex;gap:18px}.chart .lb span{flex:1;text-align:center}
+.chart .lg{margin-top:8px;display:flex;gap:12px}
+.chart .lg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
+.dprop{background:var(--card);border:1px solid var(--line2);border-radius:14px;padding:16px 18px;font-size:13.5px;animation:pop .5s 1.2s both}
+.dprop b{display:block;color:var(--gold);margin-bottom:8px}
+.dprop p{color:var(--tx2);line-height:1.7}
+.dprop .wt{margin-top:12px;font-size:12px;color:var(--me)}
+
+@media (max-width:1000px){
+  .feat{grid-template-columns:1fr;gap:28px;margin-top:64px}
+  .feat.rev .ftxt{order:0}
+}
+@media (max-width:600px){
+  .fvis{padding:28px 16px 18px;min-height:0}
+  .scB .bgrid,.scD .dgrid{grid-template-columns:1fr}
+  .scC .cgrid{grid-template-columns:1fr}
+  .arw{transform:rotate(90deg);text-align:center}
+  .gen .cov{width:42%}
+  .stage{padding:18px 14px 22px;min-height:460px}
+  .say{font-size:14px}
+  .drop{flex-direction:column;gap:20px}
+  .fly.in{transform:translate(0,-150px) scale(.5)}
+  .kv{min-width:0;width:100%;padding:18px;font-size:14px;gap:10px 18px}
+  .ci{grid-template-columns:18px 1fr auto;font-size:13px;padding:8px 10px;gap:8px}
+  .ci .st{display:none}
+  .ph3{gap:10px}.ph3 .item{width:30%}
+  .revw{flex-direction:column;gap:16px}.revw .phone{width:120px}
+  .rbox{min-width:0;width:100%}
+  .cp,.dat{grid-template-columns:1fr}
+  .cv3{gap:10px}.cv3 .cw{width:31%}.cv3 .cov{font-size:12px}
+}
+
+/* 成长闭环 */
+.grow{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;margin-top:52px}
+.loops{display:flex;flex-direction:column;gap:14px}
+.loop{display:grid;grid-template-columns:52px 1fr;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.loop .k{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:24px;background:var(--goldbg)}
+.loop h3{font-size:17px;margin-bottom:4px}
+.loop p{font-size:14.5px;color:var(--tx2)}
+.loop .ex{margin-top:10px;font-size:13px;color:var(--tx3);border-left:2px solid var(--line2);padding-left:10px}
+.ring{position:relative;aspect-ratio:1;max-width:460px;margin:0 auto;width:100%}
+.ring svg{width:100%;height:100%;overflow:visible}
+.ring .center{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none}
+.ring .center b{display:block;font-size:30px;font-weight:900;line-height:1.2}
+.ring .center .cs{font-size:14px;color:var(--tx2);display:block;margin-top:8px}
+.node{font-size:14px;font-weight:600;fill:var(--tx)}
+.nodesub{font-size:12px;fill:var(--tx3)}
+@keyframes dash{to{stroke-dashoffset:-60}}
+.flowline{stroke-dasharray:6 14;animation:dash 2.4s linear infinite}
+
+/* 新形态 */
+.form::before{content:"";position:absolute;left:50%;top:0;width:min(1100px,100%);height:520px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(245,192,74,.10),transparent);pointer-events:none}
+.form .wrap{position:relative}
+.quote{font-size:clamp(24px,3.4vw,36px);font-weight:800;line-height:1.45;max-width:880px;margin:0 auto 54px;text-align:center}
+.quote .gold{font-weight:900}
+.cmp{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;font-size:15px}
+.cmp th,.cmp td{padding:18px 20px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+.cmp tr:last-child td{border-bottom:0}
+.cmp th{font-size:14px;color:var(--tx3);font-weight:600;background:var(--bg2)}
+.cmp td:first-child{color:var(--tx3);width:15%;font-size:14px}
+.cmp td{color:var(--tx2);width:28%}
+.cmp .us{color:var(--tx);background:rgba(245,192,74,.05)}
+.cmp th.us{color:var(--gold);background:rgba(245,192,74,.10)}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
+.three div{padding:20px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg2)}
+.three b{display:block;font-size:16px;margin-bottom:6px}
+.three p{font-size:14px;color:var(--tx2)}
+
+/* 安心 */
+.safe{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:46px}
+.safe div{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px 18px}
+.safe .e{font-size:24px;margin-bottom:12px;display:block}
+.safe b{display:block;font-size:15.5px;margin-bottom:6px}
+.safe p{font-size:13.5px;color:var(--tx2)}
+
+/* FAQ */
+.faq{max-width:820px;margin:46px auto 0}
+details{border-bottom:1px solid var(--line);padding:6px 0}
+summary{list-style:none;cursor:pointer;padding:18px 40px 18px 0;font-size:17px;font-weight:600;position:relative}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";position:absolute;right:6px;top:12px;font-size:26px;font-weight:300;color:var(--tx3);transition:transform .25s}
+details[open] summary::after{transform:rotate(45deg);color:var(--gold)}
+details p{padding:0 40px 20px 0;color:var(--tx2);font-size:15px}
+
+/* 结尾 */
+.end{text-align:center;padding:120px 0 100px}
+.end h2{margin-bottom:14px}
+.end .copybox{margin:36px auto 0;text-align:left}
+.full{max-width:600px;margin:18px auto 0;text-align:left}
+.full summary{font-size:14px;font-weight:500;color:var(--tx2);padding:10px 30px 10px 0}
+.full summary::after{top:4px;font-size:22px}
+.full pre{white-space:pre-wrap;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:18px;font:13px/1.75 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--tx2);margin-bottom:12px}
+.full .btn{padding:9px 16px;font-size:14px}
+.req{margin-top:30px;font-size:14px;color:var(--tx3)}
+footer{border-top:1px solid var(--line);padding:34px 0 44px;font-size:14px;color:var(--tx3)}
+footer .wrap{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+footer .by b{color:var(--tx)}
+footer .fl{display:flex;gap:22px;margin-left:auto;flex-wrap:wrap}
+footer a:hover{color:var(--gold)}
+
+/* 进场 */
+.rv{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.rv.vis{opacity:1;transform:none}
+
+/* 手机 */
+@media (max-width:1000px){
+  .hero .wrap,.grow{grid-template-columns:1fr}
+  .safe{grid-template-columns:1fr 1fr}
+  .three{grid-template-columns:1fr}
+  nav .links{display:none}
+  nav .gh{margin-left:auto}
+}
+@media (max-width:600px){
+  section{padding:80px 0}
+  .hero{padding:56px 0 70px}
+  .safe{grid-template-columns:1fr}
+  .copybox{flex-direction:column;align-items:stretch}
+  .copybox .btn{justify-content:center}
+  .cmp{font-size:13.5px}
+  .cmp th,.cmp td{padding:12px 10px}
+  footer .fl{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="logo" href="#top">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#16161c"/><path d="M18 14h17a10 10 0 0 1 0 20H18zM18 34h19a10 10 0 0 1 0 20H18z" fill="none" stroke="#f5c04a" stroke-width="6" stroke-linejoin="round"/></svg>
+      百搭剪辑
+    </a>
+    <div class="links">
+      <a href="#how">怎么跑</a>
+      <a href="#get">能拿到什么</a>
+      <a href="#form">新形态</a>
+      <a href="#faq">常见问题</a>
+    </div>
+    <a class="gh" href="https://github.com/CrazyGoudanli/video-clip-sop" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- 首屏 -->
+<header class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <div class="tag"><i></i>开源免费 · 本地运行 · MIT 协议</div>
+      <h1>把录像扔进去，<br><span class="gold">剩下的交给它</span></h1>
+      <p class="sub">百搭剪辑是一个<b>会长成你样子的 AI 剪辑团队</b>：长录像自动转写、挑片段、剪辑、写文案、做封面、多平台定时发布，再用发布数据反过来改进自己。</p>
+      <div class="copybox">
+        <div class="txt" id="short1"></div>
+        <button class="btn" data-copy="short"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>复制一句话</span></button>
+      </div>
+      <div class="hint">粘贴给你的 AI Agent，它会帮你下载、安装、配置好，需要你动手的地方会停下来告诉你。</div>
+      <div class="agents">支持
+        <span class="a">Claude Code</span><span class="a">Codex</span><span class="a">Cursor CLI</span><span class="a">Pi</span>
+      </div>
+    </div>
+
+    <div class="demo" aria-label="工作台演示动画">
+      <div class="bar"><i></i><i></i><i></i><span>百搭剪辑 · 工作台</span></div>
+      <div class="file" id="dfile"><div class="ic">🎬</div><div><span id="dname">直播回放-2小时.mp4</span><small id="dsub">等待放入收件箱…</small></div></div>
+      <ul class="steps" id="dsteps"></ul>
+      <div class="plats" id="dplats"><span>抖音</span><span>视频号</span><span>小红书</span><span>B站</span><span>快手</span></div>
+      <div class="log" id="dlog">&nbsp;</div>
+    </div>
+  </div>
+</header>
+
+<!-- 怎么跑 -->
+<section id="how" style="padding-top:70px">
+  <div class="wrap">
+    <div class="eyebrow rv">怎么跑</div>
+    <h2 class="rv">先看它跑一遍：<br>能全自动，但关键的事<span class="gold">你说了算</span></h2>
+    <p class="lead rv">看一个模拟案例：一节 2 小时的直播课，从扔进去到排好发布，再到回收数据。<span style="color:var(--me)">蓝色</span>是等你拍板的地方；途中弹出的<span class="gold">金色卡片</span>，是它的四个本事：全自动、自我迭代、学习能力、数据优化。</p>
+    <div class="sim rv" id="sim">
+      <div class="simbar">
+        <div class="dots"><i></i><i></i><i></i></div><span>百搭剪辑 · 工作台（模拟案例）</span>
+        <div class="ctl">
+          <div class="toggle sm" id="tg" role="switch" aria-checked="false" tabindex="0"><span>AI 代审</span><span class="sw"></span></div>
+          <button class="sbtn" id="pp">⏸ 暂停</button><button class="sbtn" id="rp">↺ 重播</button>
+        </div>
+      </div>
+      <div class="rail" id="rail"></div>
+      <div class="stage" id="stage">
+        <div class="say" id="say"><span class="who">AI</span><span id="sayt"></span></div>
+        <div class="sbody"><div class="screen" id="screen"></div><div class="capw" id="capw"></div></div>
+        <div class="cursor" id="simcur"><svg viewBox="0 0 24 24"><path d="M4 2l16 9-7 2-3 7z" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="sprog"><i id="sprog"></i></div>
+    </div>
+  </div>
+</section>
+
+<!-- 你能拿到什么 -->
+<section id="get">
+  <div class="wrap">
+    <div class="eyebrow rv">你能拿到什么</div>
+    <h2 class="rv">以前一整天的活，<span class="gold">现在你只点 4 下</span></h2>
+    <p class="lead rv">剪一条长录像，以前要自己做的事，现在都交给它。你只在 4 个地方点一下；打开 AI 代审，连这 4 下也能省。</p>
+
+    <div class="ba sc scE rv">
+      <div class="before">
+        <div class="bah">以前，你自己来</div>
+        <ol class="chores">
+          <li style="--d:0s">把 2 小时录像从头听一遍</li>
+          <li style="--d:.18s">记下哪几段能用</li>
+          <li style="--d:.36s">一段段剪出来，去掉口误和停顿</li>
+          <li style="--d:.54s">加字幕、加标题栏</li>
+          <li style="--d:.72s">每个平台各想一版标题和文案</li>
+          <li style="--d:.9s">做竖版、横版封面</li>
+          <li style="--d:1.08s">登录好几个平台，一个个上传</li>
+          <li style="--d:1.26s">设好时间，千万别手滑立即发</li>
+          <li style="--d:1.44s">过几天回去翻数据</li>
+          <li style="--d:1.62s">琢磨下次怎么改</li>
+        </ol>
+      </div>
+      <div class="after">
+        <div class="bah">现在，你只做这 4 下</div>
+        <div class="taps">
+          <div class="tp" style="--d:2.1s"><span>👆</span><b>挑片段</b><small>从候选里勾几条</small></div>
+          <div class="tp" style="--d:2.3s"><span>👀</span><b>看成片</b><small>满意就点通过</small></div>
+          <div class="tp" style="--d:2.5s"><span>🖼️</span><b>选封面</b><small>三张里挑一张</small></div>
+          <div class="tp" style="--d:2.7s"><span>✅</span><b>点授权</b><small>确认定时发布</small></div>
+        </div>
+        <div class="aih">其余的，全由 AI 接手 ✓</div>
+      </div>
+    </div>
+
+    <h3 class="geth rv">最后，你拿到的是这些</h3>
+    <div class="deliv">
+      <div class="dv rv">
+        <div class="dvv"><div class="mini3">
+          <div class="phone"><div class="pt">第一句就问错了</div><div class="blob"></div><div class="sb">90% 的人都这样用</div><div class="pb"><i style="width:100%"></i></div></div>
+          <div class="phone"><div class="pt">新手 3 个坑</div><div class="blob"></div><div class="sb">第一个坑是……</div><div class="pb"><i style="width:100%"></i></div></div>
+          <div class="phone"><div class="pt">别让 AI 写废话</div><div class="blob"></div><div class="sb">换个问法就行</div><div class="pb"><i style="width:100%"></i></div></div>
+        </div></div>
+        <b>一条录像 → 好几条成片</b><p>竖屏、去掉废话和停顿、带字幕和标题栏，直接放进「成片」文件夹。</p>
+      </div>
+      <div class="dv rv">
+        <div class="dvv"><div class="covs">
+          <div class="cov"><span class="shp cube"></span><b>第一句就<em>问错了</em></b></div>
+          <div class="cov h"><span class="shp cube"></span><b>第一句就<em>问错了</em></b></div>
+        </div></div>
+        <b>竖版 + 横版封面</b><p>按你的参考风格，用文字加图形做封面，不放真人。各平台要的尺寸都备好。</p>
+      </div>
+      <div class="dv rv">
+        <div class="dvv"><div class="cps">
+          <div><i>抖音</i>90% 的人用 AI，第一句就问错了</div>
+          <div><i>视频号</i>用 AI 之前，先改掉这个习惯</div>
+          <div><i>小红书</i>AI 新手必看｜第一句话决定一切 ✨</div>
+          <div><i>B站</i>【AI 入门】为什么你的 AI 总答非所问？</div>
+        </div></div>
+        <b>每个平台一版文案</b><p>标题、简介、话题标签按各平台的调性分别写，不是一稿多发。</p>
+      </div>
+      <div class="dv rv">
+        <div class="dvv"><div class="sch">
+          <div><span>抖音</span><em>明天 10:00 ✓</em></div>
+          <div><span>视频号</span><em>明天 10:00 ✓</em></div>
+          <div><span>小红书</span><em>明天 12:00 ✓</em></div>
+          <div><span>B站</span><em>明天 12:00 ✓</em></div>
+        </div></div>
+        <b>排好的定时发布</b><p>在各平台后台设好定时，再逐个回去核对，确认真的排上了。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 新形态 -->
+<section id="form" class="form">
+  <div class="wrap">
+    <div style="text-align:center"><div class="eyebrow rv">一种新的软件形态</div></div>
+    <p class="quote rv">它不是工具，也不是 Skill。<br>它是一份<span class="gold">任何 AI 都读得懂的说明书</span>，<br>在你手里长成你的版本。</p>
+    <div class="rv" style="overflow-x:auto">
+      <table class="cmp">
+        <tr><th></th><th>传统软件</th><th>Skill / 插件</th><th class="us">百搭剪辑</th></tr>
+        <tr><td>本体是什么</td><td>写死的程序代码</td><td>一段教 AI 做某件事的说明</td><td class="us">一整套流程 + 标准 + 工具，全写成 AI 读得懂的文件</td></tr>
+        <tr><td>谁来运行</td><td>你自己点按钮</td><td>AI 在对话里调用一下</td><td class="us">你选的 AI Agent 驱动全流程，按时自动接着干</td></tr>
+        <tr><td>怎么升级</td><td>等开发者发新版</td><td>手动改说明</td><td class="us">用着用着就长：你的选择和发布数据会变成新标准</td></tr>
+        <tr><td>为谁定制</td><td>所有人都一样</td><td>通用，不认识你</td><td class="us">每个人跑出来都是不一样的版本</td></tr>
+        <tr><td>换工具</td><td>重新开发</td><td>重写</td><td class="us">流程和标准不动，只换工具那一层</td></tr>
+      </table>
+    </div>
+    <div class="three">
+      <div class="rv"><b>📐 流程</b><p>有哪些环节、谁来拍板、出错怎么办。换 AI、换剪辑软件都不用改。</p></div>
+      <div class="rv"><b>✅ 标准</b><p>做成什么样算合格：选题、剪辑、文案、封面。会随你的选择和数据不断更新。</p></div>
+      <div class="rv"><b>🧰 工具</b><p>具体用什么软件、什么命令。想换工具，只改这一层。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 安心 -->
+<section id="safe">
+  <div class="wrap">
+    <div class="eyebrow rv">放心交给它</div>
+    <h2 class="rv">自动，但有边界</h2>
+    <p class="lead rv">这些规矩写在流程最前面，交给哪个 AI 都一样要守。</p>
+    <div class="safe">
+      <div class="rv"><span class="e">⏰</span><b>只定时，不手滑</b><p>只会设成定时发布，绝不会立即发出去。</p></div>
+      <div class="rv"><span class="e">🔒</span><b>账号你自己管</b><p>不碰密码，不代填账号。登录、扫码、验证码都由你来。</p></div>
+      <div class="rv"><span class="e">💰</span><b>要花钱就停</b><p>任何会扣积分、要付费的地方，都先停下问你。</p></div>
+      <div class="rv"><span class="e">🎞️</span><b>原片不动</b><p>原始录像只挪位置做归档，不删除、不修改。</p></div>
+      <div class="rv"><span class="e">💻</span><b>数据在你电脑上</b><p>状态、记录、转写都在本机，转写也在本机跑，不上传。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" style="padding-top:40px">
+  <div class="wrap">
+    <div style="text-align:center"><div class="eyebrow rv">常见问题</div><h2 class="rv">你可能想问</h2></div>
+    <div class="faq">
+      <details class="rv"><summary>要花钱吗？</summary><p>项目本身开源免费（MIT 协议）。转写在你电脑上跑，不花钱；剪片之前主要用的是你 AI 账号的额度。剪辑时用的 ChatCut 如果要扣积分，会先停下来问你。</p></details>
+      <details class="rv"><summary>需要什么电脑和软件？</summary><p>目前只支持 Mac（Apple 芯片），需要安装 ChatCut 来剪辑，再加上一个支持的 AI Agent：Claude Code（推荐）、Codex、Cursor CLI 或 Pi。缺什么，它会帮你检查、能装的直接装。</p></details>
+      <details class="rv"><summary>适合什么样的视频？</summary><p>课程、直播、访谈、论坛这类长录像最合适，会被剪成竖屏短视频。剪多长、什么风格、发哪些平台，都可以在第一次启动时告诉它，之后也能随时改。</p></details>
+      <details class="rv"><summary>支持哪些平台？</summary><p>抖音、视频号、小红书、B站、快手，想发哪几个自己选。发布通过浏览器完成，登录由你自己来。</p></details>
+      <details class="rv"><summary>会不会自己乱发、乱改？</summary><p>不会。默认在挑片段、看成片、选封面、确认发布这 4 步等你拍板；发布只会设成定时；标准的修改只提建议，你同意后才生效。想更省心，可以逐个打开「AI 代审」开关。</p></details>
+      <details class="rv"><summary>我不会写代码，能用吗？</summary><p>能。复制上面那一句话交给你的 AI，它会一步步问你几个问题、帮你装好。日常用本地的网页工作台点按钮就行，不用碰命令行。</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- 结尾 -->
+<section class="end" id="start">
+  <div class="wrap">
+    <h2 class="rv">一句话，<span class="gold">开始养你的剪辑团队</span></h2>
+    <p class="lead rv" style="margin:0 auto">复制下面这句话，粘贴给你的 AI Agent 就行。</p>
+    <div class="copybox rv">
+      <div class="txt" id="short2"></div>
+      <button class="btn" data-copy="short"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>复制一句话</span></button>
+    </div>
+    <details class="full rv">
+      <summary>想让 AI 更小心一点？看完整版提示词</summary>
+      <pre id="fullp"></pre>
+      <button class="btn" data-copy="full"><span>复制完整版</span></button>
+    </details>
+    <p class="req rv">Mac（Apple 芯片） · ChatCut · Claude Code / Codex / Cursor CLI / Pi 任选其一</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="by">由 <b>呆胶布</b> 打造 · MIT 协议开源</div>
+    <div class="fl">
+      <a href="https://github.com/CrazyGoudanli/video-clip-sop" target="_blank" rel="noopener">项目仓库</a>
+      <a href="https://github.com/CrazyGoudanli" target="_blank" rel="noopener">GitHub @CrazyGoudanli</a>
+      <a href="https://daijiaobu.com/" target="_blank" rel="noopener">个人网站 daijiaobu.com</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const REPO="https://github.com/CrazyGoudanli/video-clip-sop";
+const SHORT=`请把 ${REPO} 克隆到我的电脑（没有 git 就先帮我装），完整阅读 AGENTS.md，按「第一次启动」帮我部署；需要我本人操作的地方用大白话告诉我，并等我做完再继续。`;
+const FULL=`请把 ${REPO} 克隆到我的电脑（没有 git 就先帮我装），
+进入项目后完整阅读 AGENTS.md，按其中「第一次启动」部署：
+按「启动问卷.md」一次问我一两题生成 配置.json，
+运行 python3 3-工具/check_env.py --fix，缺的工具你能装就直接装，需要我操作的用大白话告诉我并等我，
+最后运行 python3 3-工具/verify_flow.py，用大白话告诉我结果和下一步。
+不要编造路径或账号，不代填密码，人工关卡（挑选 / 看片 / 授权发布 / 改标准）不要代做。`;
+document.getElementById("short1").textContent=SHORT;
+document.getElementById("short2").textContent=SHORT;
+document.getElementById("fullp").textContent=FULL;
+
+function copyText(t){
+  if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(t);
+  return new Promise((ok,no)=>{const a=document.createElement("textarea");a.value=t;a.style.position="fixed";a.style.opacity="0";document.body.appendChild(a);a.select();try{document.execCommand("copy")?ok():no()}catch(e){no(e)}a.remove()});
+}
+document.querySelectorAll("[data-copy]").forEach(b=>{
+  const lab=b.querySelector("span"),orig=lab.textContent;
+  b.addEventListener("click",()=>{
+    copyText(b.dataset.copy==="full"?FULL:SHORT).then(()=>{b.classList.add("done");lab.textContent="已复制，去粘贴给 AI 吧";setTimeout(()=>{b.classList.remove("done");lab.textContent=orig},2400)}).catch(()=>{lab.textContent="复制失败，请手动选中复制"});
+  });
+});
+
+/* 首屏动画 */
+const STEPS=[["📥","收件","AI"],["🎧","转写 + 复盘","AI"],["👤","挑片段","你"],["✂️","剪辑","AI"],["👤","看成片","你"],["✍️","写文案","AI"],["🎨","做封面","AI"],["👤","选封面 · 确认发布","你"],["⏰","定时发布","AI"]];
+const LOGS=["发现新录像，开始整理…","本机转写完成，找到 6 个精彩片段","你挑了 3 条，开始剪辑","ChatCut 剪辑完成：3 条竖屏成片","你看过了：通过","每个平台各写一版标题和文案","按你的参考风格出了 3 张封面","你选了封面，授权发布","<b>【完成】</b>已排好定时：明天 10:00 / 12:00"];
+const ul=document.getElementById("dsteps");
+ul.innerHTML=STEPS.map(([e,t,w])=>`<li class="${w==="你"?"me":""}"><span class="n">${e}</span><span>${t}</span><span class="st">${w==="你"?"等你":"排队"}</span></li>`).join("");
+const lis=[...ul.children],plats=[...document.querySelectorAll("#dplats span")],dfile=document.getElementById("dfile"),dsub=document.getElementById("dsub"),dlog=document.getElementById("dlog");
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function reset(){lis.forEach((l,i)=>{l.classList.remove("run","ok");l.querySelector(".st").textContent=STEPS[i][2]==="你"?"等你":"排队"});plats.forEach(p=>p.classList.remove("on"));dfile.classList.remove("in");dsub.textContent="等待放入收件箱…";dlog.innerHTML="&nbsp;"}
+function finish(){lis.forEach(l=>{l.classList.add("ok");l.querySelector(".st").textContent="✓ 完成"});plats.forEach(p=>p.classList.add("on"));dfile.classList.add("in");dsub.textContent="已处理 · 3 条成片";dlog.innerHTML=LOGS[LOGS.length-1]}
+function run(){
+  if(reduce){finish();return}
+  reset();let i=-1;
+  setTimeout(()=>{dfile.classList.add("in");dsub.textContent="已放入收件箱 · 2:03:41"},500);
+  const tick=()=>{
+    if(i>=0){lis[i].classList.remove("run");lis[i].classList.add("ok");lis[i].querySelector(".st").textContent=STEPS[i][2]==="你"?"✓ 已拍板":"✓ 完成"}
+    i++;
+    if(i<lis.length){lis[i].classList.add("run");lis[i].querySelector(".st").textContent=STEPS[i][2]==="你"?"你拍板中":"进行中…";dlog.innerHTML=LOGS[i];setTimeout(tick,i===lis.length-1?1100:1250)}
+    else{dsub.textContent="已处理 · 3 条成片";plats.forEach((p,k)=>setTimeout(()=>{p.classList.add("on");p.textContent=p.textContent.replace(/ ✓$/,"")+" ✓"},k*220));setTimeout(()=>{plats.forEach(p=>p.textContent=p.textContent.replace(/ ✓$/,""));run()},5200)}
+  };
+  setTimeout(tick,1300);
+}
+run();
+
+/* ===== 通用:光标 ===== */
+const reduceMo=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function pointAt(box,cur,target){
+  if(!target)return;
+  const r=target.getBoundingClientRect(),b=box.getBoundingClientRect();
+  cur.style.transform=`translate(${r.left-b.left+r.width*.55}px,${r.top-b.top+r.height*.55}px)`;
+  cur.classList.add("show");
+}
+function tapCur(cur){cur.classList.remove("down");void cur.offsetWidth;cur.classList.add("down")}
+function homeCur(box,cur){cur.classList.remove("show","down");cur.style.transform=`translate(${box.clientWidth-40}px,${box.clientHeight-40}px)`}
+
+/* ===== 它能做什么:四段小演示 ===== */
+document.querySelectorAll(".scA .wave").forEach(w=>{w.innerHTML=Array.from({length:90},(_,i)=>`<i style="height:${18+Math.round(70*Math.abs(Math.sin(i*1.7)*Math.cos(i*.37)))}%"></i>`).join("")});
+function scene(el,plan,once){
+  const cur=el.querySelector(".cursor");let timers=[],on=false;
+  const reset=()=>{for(let i=1;i<=9;i++)el.classList.remove("s"+i);el.querySelectorAll(".tapped").forEach(x=>x.classList.remove("tapped"));el.querySelectorAll("[data-to]").forEach(n=>n.textContent="0");el.querySelectorAll("[data-from]").forEach(n=>n.textContent=n.dataset.from);if(cur)homeCur(el,cur)};
+  const ctx={el,cur,S:n=>el.classList.add("s"+n),point:sel=>pointAt(el,cur,el.querySelector(sel)),tap:sel=>{const t=el.querySelector(sel);t&&t.classList.add("tapped");tapCur(cur)},count:()=>el.querySelectorAll("[data-to]").forEach(n=>{const to=+n.dataset.to;let i=0;const k=setInterval(()=>{i++;n.textContent=(to*i/24).toFixed(1);if(i>=24)clearInterval(k)},45)})};
+  const play=()=>{timers.forEach(clearTimeout);timers=[];reset();let t=0;plan.forEach(([dt,fn])=>{t+=dt;timers.push(setTimeout(()=>fn(ctx),t))});if(!once)timers.push(setTimeout(()=>{if(on)play()},t+3000))};
+  if(reduceMo){plan.forEach(([,fn])=>{try{fn(ctx)}catch(e){}});if(cur)cur.classList.remove("show");return}
+  let done=false;new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!on&&!(once&&done)){on=true;done=true;play()}else if(!e.isIntersecting&&on&&!once){on=false;timers.forEach(clearTimeout);timers=[]}}),{threshold:.35}).observe(el);
+}
+scene(document.querySelector(".scE"),[[300,c=>c.S(1)]],true);
+
+/* ===== 怎么跑:模拟工作台 ===== */
+const RAIL=[["📥","收件","ai"],["🗂","整理","ai"],["🎧","速记复盘","ai"],["👆","挑片段","me"],["✂️","剪辑","ai"],["👀","看成片","me"],["✍️","写文案","ai"],["🎨","做封面","ai"],["🖼️","选封面","me"],["✅","确认发布","me"],["⏰","定时发布","ai"],["📊","数据复盘","ai"]];
+const CANDS=[["90% 的人用 AI，第一句就问错了","00:12:20","72 秒","★★★★★"],["一个好提示词，顶你十个助理","00:31:55","85 秒","★★★★"],["新手最容易踩的 3 个坑","00:52:47","68 秒","★★★★★"],["我一天剪 10 条视频的秘密","01:05:30","90 秒","★★★"],["别再让 AI 给你写废话了","01:26:40","64 秒","★★★★"],["AI 做 PPT，最强的不是排版","01:39:05","77 秒","★★★"]];
+const TS=[["00:02:11","大家好，今天这节课我们聊 AI 工具……",0],["00:12:20","90% 的人用 AI，第一句话就问错了",1],["00:18:41","你把它当搜索引擎，它就只能给你搜索结果",0],["00:25:10","这里插一句，下周的课改到周四……",0],["00:31:55","一个好的提示词，能顶你十个助理",1],["00:40:02","（课间休息）",0],["00:52:47","新手最容易踩的 3 个坑，第一个是……",1],["01:05:30","我现在一天能剪 10 条视频，靠的是……",1],["01:17:12","有同学问免费版够不够用……",0],["01:26:40","别再让 AI 给你写废话了",1],["01:39:05","做 PPT，AI 最强的不是排版",1],["01:52:18","好，今天就到这里，下课",0]];
+const phone=(t,s)=>`<div class="phone"><div class="pt">${t}</div><div class="blob"></div><div class="sb">${s}</div><div class="pb"><i></i></div></div>`;
+const cover=(shp,t)=>`<div class="cov"><span class="shp ${shp}"></span><b>${t}</b></div>`;
+const PLATS=[["抖音","明天 10:00"],["视频号","明天 10:00"],["小红书","明天 12:00"],["B站","明天 12:00"]];
+const capbox=(tag,title,body,extra="")=>`<div class="capc"><span class="ctag">${tag}</span><h4>${title}</h4><p>${body}</p>${extra}</div>`;
+const CAP_ITER=capbox("🔁 自我迭代","没选的，它也记着","你勾了哪几条、跳过了哪几条、写过什么备注，都会记成你的偏好。同一个意见出现几次，它就提议写进标准。",`<div class="mx"><div class="r"><span>开头太慢</span><em>×3</em></div><div class="r"><span>标题里有具体数字</span><em>×5</em></div><div class="nw">→ 建议：前 3 秒必须抛出问题</div></div>`);
+const CAP_ITER_AI=capbox("🔁 自我迭代","它按你的口味替你挑","AI 代审挑片段时，用的就是你以前每次选择、每条备注攒下来的偏好。",`<div class="mx"><div class="r"><span>开头太慢的不要</span><em>×3</em></div><div class="r"><span>标题里有具体数字</span><em>×5</em></div></div>`);
+const CAP_LEARN=capbox("🧠 学习能力","照着你喜欢的风格做","你放进「参考/封面」的图，它先总结成一份风格档案，你确认后，每张新封面都照这个来。",`<div class="refs3">${cover("","月入<em>3 万</em>")}${cover("cube","别再<em>瞎学</em>")}${cover("ring","<em>一招</em>搞定")}</div><div class="chips"><span class="chip">深色底</span><span class="chip">金色重点词</span><span class="chip">超粗大字</span><span class="chip">3D 图形</span></div>`);
+const CAP_AUTO=capbox("⚙️ 全自动","从头到尾，你只点了 4 下","12 步里有 8 步是 AI 自己接力完成的：转写、剪辑、写文案、做封面、去各平台排定时……打开 AI 代审，这 4 下也能交给它。");
+const CAP_AUTO_AI=capbox("⚙️ 全自动","这一次，你一下都没点","AI 代审打开后，挑片段、看成片、选封面、授权发布也由 AI 按你的标准完成。整条流水线真正无人值守。");
+const CAP_DATA=capbox("📈 数据优化","发出去不算完","第 1、3 条都用了提问式开头，播放和完播都明显更高。建议在选题标准里加一条：",`<div class="mx"><div class="nw">开头优先用提问式钩子</div></div><div class="cb"><span class="no">先不改</span><span class="yes">同意</span></div><div class="done">✓ 标准已更新，下一条就照这个来</div>`);
+const SIM=[
+ {say:"发现新录像，放进了收件箱",h:`<div class="drop"><div class="fz" id="fz">📁 收件箱</div><div class="fly" id="fly">🎬 直播课-AI工具.mp4<small>2:03:41 · 3.8 GB</small></div></div>`,
+  a:[[700,s=>s.q("#fly").classList.add("in")],[1500,s=>{const f=s.q("#fz");f.classList.add("got");f.innerHTML="📁 收件箱<br>1 条新录像 ✓"}]],d:3000},
+ {say:"整理：认出时长和画质，编好号，原片归档（不删不改）",h:`<dl class="kv"><dt>素材编号</dt><dd>直-1116</dd><dt>时长</dt><dd>2 小时 03 分</dd><dt>画面</dt><dd>1920×1080 横屏</dd><dt>来源</dt><dd>直播</dd><dt>原片</dt><dd class="okc">已归档 ✓</dd></dl>`,
+  a:[[0,s=>s.qa(".kv>*").forEach((x,i)=>x.style.animationDelay=(Math.floor(i/2)*.25)+"s")]],d:3000},
+ {say:"在你电脑上转写，读完写复盘，挑出 6 个候选片段",h:`<div class="ts"><div class="in">${TS.map(([t,x,h])=>`<p class="${h?"hl":""}"><span>${t}</span>${x}</p>`).join("")}</div><div class="cnt" id="cnt">✓ 转写完成 · 复盘写好了 · 找到 6 个候选片段</div></div>`,
+  a:[[3000,s=>s.q("#cnt").classList.add("on")]],d:4400},
+ {say:"等你拍板：6 个候选里，挑出要剪的",aiSay:"AI 代审：按你的选题标准，挑了最好的 3 条",h:`<div class="cl">${CANDS.map(([t,a,b,st])=>`<div class="ci"><span class="bx"></span><span>${t}</span><span class="tm">${a} · ${b}</span><span class="st">${st}</span></div>`).join("")}<div class="go">去剪这 3 条</div></div>`,
+  a:[[500,s=>s.point(".ci:nth-child(1) .bx")],[1100,s=>s.tap(".ci:nth-child(1)","on")],[1500,s=>s.point(".ci:nth-child(3) .bx")],[2100,s=>s.tap(".ci:nth-child(3)","on")],[2500,s=>s.point(".ci:nth-child(5) .bx")],[3100,s=>s.tap(".ci:nth-child(5)","on")],[3600,s=>s.point(".go")],[4200,s=>s.tap(".go","tapped")]],d:8600,cap:{t:4700,tAi:2500,h:CAP_ITER,hAi:CAP_ITER_AI},
+  ai:[[600,s=>s.q(".ci:nth-child(1)").classList.add("on")],[1000,s=>s.q(".ci:nth-child(3)").classList.add("on")],[1400,s=>s.q(".ci:nth-child(5)").classList.add("on")],[2100,s=>s.q(".go").classList.add("tapped")]],dAi:6400},
+ {say:"用 ChatCut 剪辑：竖屏、去掉废话和停顿、加字幕和标题栏",h:`<div class="ph3"><div class="item">${phone("第一句就问错了","90% 的人都这样用")}第 1 条 · 72 秒</div><div class="item">${phone("新手 3 个坑","第一个坑是……")}第 2 条 · 68 秒</div><div class="item">${phone("别让 AI 写废话","换个问法就行")}第 3 条 · 64 秒</div></div>`,d:4000},
+ {say:"等你看成片：满意就通过，不满意写一句原因打回",aiSay:"AI 代审：按剪辑标准逐条检查，3 条都合格",h:`<div class="revw">${phone("第一句就问错了",'<span>90% 的人用 AI</span><span>第一句话就问错了</span><span>你是不是也这样？</span>')}<div class="rbox"><div class="meta">第 1 / 3 条<br><b>90% 的人用 AI，第一句就问错了</b><br>72 秒 · 竖屏 · 有字幕</div><div class="rbtn pass">✓ 通过</div><div class="rbtn">✗ 打回，写原因</div></div></div>`,
+  a:[[1500,s=>s.point(".rbtn.pass")],[2200,s=>s.tap(".rbtn.pass","tapped")],[2700,s=>{s.q(".meta").innerHTML="3 / 3 条都看完了<br><b>全部通过 ✓</b><br>打回的会带着原因重剪"}]],d:3800,
+  ai:[[1400,s=>s.q(".rbtn.pass").classList.add("tapped")],[1900,s=>{s.q(".meta").innerHTML="3 / 3 条检查完<br><b>全部合格 ✓</b><br>时长、字幕、开头都达标"}]],dAi:3000},
+ {say:"写文案：每个平台按自己的调性各写一版",h:`<div class="cp"><div class="cc"><b>抖音</b><div class="t">90% 的人用 AI，第一句就问错了</div><div class="d">#AI工具 #提示词 #效率</div></div><div class="cc"><b>视频号</b><div class="t">用 AI 之前，先改掉这个习惯</div><div class="d">第一句话，决定了 AI 给你的答案质量。</div></div><div class="cc"><b>小红书</b><div class="t">AI 新手必看｜第一句话决定一切 ✨</div><div class="d">#AI #打工人必备 #干货</div></div><div class="cc"><b>B站</b><div class="t">【AI 入门】为什么你的 AI 总是答非所问？</div><div class="d">分区：知识 · 科技</div></div></div>`,d:3800},
+ {say:"做封面：照你的参考风格出 3 张候选，只用文字和图形",h:`<div class="cv3"><div class="cw">${cover("","第一句就<em>问错了</em>")}矢量扁平</div><div class="cw">${cover("cube","第一句就<em>问错了</em>")}3D 立体</div><div class="cw">${cover("ring","第一句就<em>问错了</em>")}极简几何</div></div>`,
+  a:[[0,s=>s.qa(".cov").forEach(x=>x.classList.add("mk"))],[900,s=>s.qa(".cov")[0].classList.remove("mk")],[1400,s=>s.qa(".cov")[1].classList.remove("mk")],[1900,s=>s.qa(".cov")[2].classList.remove("mk")]],d:7000,cap:{t:2400,h:CAP_LEARN}},
+ {say:"等你选封面：点一下你最喜欢的那张",aiSay:"AI 代审：按封面标准，选了最清楚的一张",h:`<div class="cv3"><div class="cw">${cover("","第一句就<em>问错了</em>")}<span class="pk">✓ 已选</span></div><div class="cw">${cover("cube","第一句就<em>问错了</em>")}<span class="pk">✓ 已选</span></div><div class="cw">${cover("ring","第一句就<em>问错了</em>")}<span class="pk">✓ 已选</span></div></div>`,
+  a:[[900,s=>s.point(".cw:nth-child(2) .cov")],[1600,s=>{s.tap(".cw:nth-child(2) .cov","picked");s.q(".cw:nth-child(2)").classList.add("sel")}]],d:3000,
+  ai:[[1000,s=>{s.q(".cw:nth-child(2) .cov").classList.add("picked");s.q(".cw:nth-child(2)").classList.add("sel")}]],dAi:2400},
+ {say:"等你授权：确认平台和时间，它只会设成定时发布",aiSay:"AI 代审：平台和时间都核对无误，授权定时",h:`<div class="pubc"><h4>第 1 条 · 第一句就问错了</h4>${PLATS.map(([p,t])=>`<div class="prow"><span class="bx"></span><span>${p}</span><span class="tm">${t}</span></div>`).join("")}<div class="nt">另外 2 条自动排在后两天 · 只定时，绝不立即发</div><div class="go">授权定时发布</div></div>`,
+  a:[[1300,s=>s.point(".pubc .go")],[2000,s=>s.tap(".pubc .go","tapped")]],d:3000,
+  ai:[[1200,s=>s.q(".pubc .go").classList.add("tapped")]],dAi:2300},
+ {say:"去各平台后台设好定时，再逐个核对是不是真的排上了",h:`<div class="sched">${PLATS.map(([p,t])=>`<div class="srow"><span>${p}</span><span class="stt">设置中…</span></div>`).join("")}<div class="nt">登录和扫码由你自己来，它不碰账号密码</div></div>`,
+  a:PLATS.map(([p,t],i)=>[700+i*550,s=>{const r=s.qa(".srow")[i];r.classList.add("ok");r.querySelector(".stt").textContent=`已定时 ✓ ${t}`}]),d:7600,cap:{t:3300,h:CAP_AUTO,hAi:CAP_AUTO_AI}},
+ {say:"发布后 24 小时、72 小时、7 天回收数据，提出改进建议",h:`<div class="dat one"><div class="chart">3 条视频的播放量（示例数据）<div class="cb2"><div class="grp"><i style="--h:30%"></i><i style="--h:62%"></i><i style="--h:92%"></i></div><div class="grp"><i style="--h:14%"></i><i style="--h:22%"></i><i style="--h:28%"></i></div><div class="grp"><i style="--h:24%"></i><i style="--h:48%"></i><i style="--h:70%"></i></div></div><div class="lb"><span>第 1 条</span><span>第 2 条</span><span>第 3 条</span></div><div class="lg"><span><i style="background:#5a4a1c"></i>24 小时</span><span><i style="background:#a07a24"></i>72 小时</span><span><i style="background:var(--gold)"></i>7 天</span></div></div></div></div>`,cap:{t:1600,h:CAP_DATA},a:[[3800,s=>s.point(".capc .yes")],[4500,s=>{s.tap(".capc .yes","tapped");s.c(".capc").classList.add("ok")}]],d:8200}
+];
+const rail=document.getElementById("rail"),stage=document.getElementById("stage"),scr=document.getElementById("screen"),sayEl=document.getElementById("say"),sayt=document.getElementById("sayt"),simcur=document.getElementById("simcur"),prog=document.getElementById("sprog"),pp=document.getElementById("pp"),tg=document.getElementById("tg");
+rail.innerHTML=RAIL.map(([e,n,w],i)=>`<div class="rc ${w}" data-i="${i}"><span class="e">${e}</span><span class="n">${n}</span><span class="w">${w==="me"?"你拍板":"AI"}</span></div>`).join("");
+const rcs=[...rail.children];
+let idx=0,playing=false,userPaused=false,aiOn=false,timers=[];
+const T=(f,ms)=>timers.push(setTimeout(f,ms));
+const clearT=()=>{timers.forEach(clearTimeout);timers=[]};
+const capw=document.getElementById("capw");
+const S={q:sel=>scr.querySelector(sel),qa:sel=>[...scr.querySelectorAll(sel)],c:sel=>capw.querySelector(sel),point:sel=>pointAt(stage,simcur,stage.querySelector(sel)),tap:(sel,cls)=>{const t=stage.querySelector(sel);t&&t.classList.add(cls);tapCur(simcur)}};
+function show(i){
+  clearT();idx=i;const s=SIM[i],me=RAIL[i][2]==="me",byAI=me&&aiOn;
+  rcs.forEach((r,k)=>{r.classList.toggle("done",k<i);r.classList.toggle("cur",k===i);r.classList.toggle("aion",aiOn)});
+  const r=rcs[i];rail.scrollTo({left:r.offsetLeft-rail.clientWidth/2+r.clientWidth/2,behavior:"smooth"});
+  stage.classList.toggle("aimode",byAI);
+  sayEl.classList.toggle("me",me&&!byAI);
+  sayEl.querySelector(".who").textContent=me?(byAI?"AI 代审":"等你"):"AI";
+  sayt.textContent=byAI?s.aiSay:s.say;
+  scr.innerHTML=s.h;homeCur(stage,simcur);
+  capw.innerHTML="";stage.classList.remove("withcap");
+  const capH=s.cap&&((aiOn&&s.cap.hAi)||s.cap.h);
+  const openCap=()=>{capw.innerHTML=capH;stage.classList.add("withcap");simcur.classList.remove("show")};
+  if(capH&&!playing)openCap();
+  prog.style.width=((i+1)/SIM.length*100)+"%";
+  if(!playing)return;
+  if(capH)T(openCap,(byAI&&s.cap.tAi)||s.cap.t);
+  (byAI?s.ai:s.a||[]).forEach(([t,f])=>T(()=>f(S),t));
+  T(()=>{if(i+1<SIM.length)show(i+1);else T(()=>show(0),2600)},byAI?s.dAi:s.d);
+}
+function setPlay(p){playing=p;pp.textContent=p?"⏸ 暂停":"▶ 继续";if(p)show(idx);else{clearT();simcur.classList.remove("show")}}
+pp.addEventListener("click",()=>{userPaused=playing;setPlay(!playing)});
+document.getElementById("rp").addEventListener("click",()=>{userPaused=false;idx=0;setPlay(true)});
+rcs.forEach(r=>r.addEventListener("click",()=>{idx=+r.dataset.i;userPaused=false;setPlay(true)}));
+function flip(){aiOn=!aiOn;tg.classList.toggle("on",aiOn);tg.setAttribute("aria-checked",aiOn);rcs.forEach(r=>{if(r.classList.contains("me")){r.classList.toggle("aion",aiOn);r.querySelector(".w").textContent=aiOn?"AI 代审":"你拍板"}});if(playing)show(idx)}
+tg.addEventListener("click",flip);tg.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();flip()}});
+if(reduceMo){show(SIM.length-1)}else{
+  show(0);
+  new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!playing&&!userPaused)setPlay(true);else if(!e.isIntersecting&&playing)setPlay(false)}),{threshold:.3}).observe(document.getElementById("sim"));
+}
+
+/* 进场动画 */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("vis");io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll(".rv").forEach(el=>io.observe(el));
+</script>
+</body>
+</html>

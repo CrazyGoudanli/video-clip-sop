@@ -543,6 +543,8 @@ def action(a):
         return rest_off(a)
     if kind == "恢复":
         return resume(a)
+    if kind == "删除记录":
+        return delete_record(a)
     if kind == "现在重试":
         ids = [i for i in (a.get("对象") or []) if ID_RE.match(i)]
         clear_cooldown(ids)
@@ -674,6 +676,17 @@ def resume(a):
     if to not in allowed:
         return False, f"现在是「{r[0]}」,不能直接改成「{to}」"
     ok, out = run_db("set", k, oid, to, "--by", "人工", "--note", "工作台:" + allowed[to] + ((":" + a["备注"]) if a.get("备注") else ""))
+    if ok:
+        clear_cooldown([oid])
+    return ok, out
+
+
+def delete_record(a):
+    k, oid = a.get("对象"), a.get("id", "")
+    if k not in ("source", "clip", "pub") or not ID_RE.match(oid):
+        return False, "参数不对"
+    note = "工作台:" + ((a.get("备注") or "").strip() or "人工移除不合格或不需要的记录")
+    ok, out = run_db("delete", k, oid, "--by", "人工", "--note", note)
     if ok:
         clear_cooldown([oid])
     return ok, out

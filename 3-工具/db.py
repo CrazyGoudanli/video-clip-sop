@@ -84,8 +84,8 @@ SOURCE_FLOW = {
 CLIP_FLOW = {
     "候选": {"待剪*", "放弃*"},
     "待剪": {"剪辑中", "放弃*", "候选*"},
-    "剪辑中": {"已剪辑", "需人工", "待剪"},          # 剪辑中 -> 待剪 只用于"时长不达标/失败重剪",会计入重剪次数
-    "已剪辑": {"已通过*", "待剪*", "需人工"},        # 看片关卡:通过 / 打回(请用 review 命令)
+    "剪辑中": {"已剪辑", "需人工", "待剪", "放弃*"},    # 剪辑中 -> 待剪 只用于"时长不达标/失败重剪",会计入重剪次数
+    "已剪辑": {"已通过*", "待剪*", "需人工", "放弃*"},  # 看片关卡:通过 / 打回(请用 review 命令) / 放弃
     "已通过": {"放弃*"},
     "放弃": {"候选*"},
     "需人工": {"候选*", "待剪*", "已剪辑*", "放弃*"},
@@ -450,6 +450,41 @@ def cmd_set(a):
     print(f"✅ {a.id} → {new}")
 
 
+def cmd_delete(a):
+    """仅限人工从 SQLite 移除不再需要的记录(绝不删除硬盘上的任何原片或文件),并在 events 表留痕。"""
+    if a.by != "人工":
+        die("删除数据库记录只能由人工执行(--by 人工),AI 不得自动删库")
+    c = conn()
+    r = row(c, a.kind, a.id)
+    old_st = r["状态"] if "状态" in r.keys() else ""
+    note = a.note or "人工从数据库移除"
+    removed = []
+    if a.kind == "pub":
+        c.execute("delete from metrics where publish_id=?", (a.id,))
+        c.execute("delete from publishes where publish_id=?", (a.id,))
+        removed.append(f"发布 {a.id}")
+    elif a.kind == "clip":
+        pids = [x[0] for x in c.execute("select publish_id from publishes where clip_id=?", (a.id,))]
+        for pid in pids:
+            c.execute("delete from metrics where publish_id=?", (pid,))
+        c.execute("delete from publishes where clip_id=?", (a.id,))
+        c.execute("delete from clips where clip_id=?", (a.id,))
+        removed.append(f"切片 {a.id}" + (f"(含 {len(pids)} 条关联发布)" if pids else ""))
+    elif a.kind == "source":
+        cids = [x[0] for x in c.execute("select clip_id from clips where source_id=?", (a.id,))]
+        for cid in cids:
+            pids = [x[0] for x in c.execute("select publish_id from publishes where clip_id=?", (cid,))]
+            for pid in pids:
+                c.execute("delete from metrics where publish_id=?", (pid,))
+            c.execute("delete from publishes where clip_id=?", (cid,))
+        c.execute("delete from clips where source_id=?", (a.id,))
+        c.execute("delete from sources where source_id=?", (a.id,))
+        removed.append(f"素材 {a.id}" + (f"(含 {len(cids)} 条关联切片)" if cids else ""))
+    log(c, a.kind, a.id, "删除记录", old_st, None, "人工", note)
+    c.commit()
+    print("✅ 已从 SQLite 移除:" + "、".join(removed))
+
+
 def cmd_update(a):
     check_by(a.by)
     c = conn()
@@ -742,6 +777,8 @@ def main():
     x = sp.add_parser("list"); x.add_argument("kind", choices=FLOWS); x.add_argument("--status"); x.add_argument("--来源", dest="source_type"); x.set_defaults(f=cmd_list)
     x = sp.add_parser("set"); x.add_argument("kind", choices=FLOWS); x.add_argument("id"); x.add_argument("status")
     x.add_argument("--by", required=True); x.add_argument("--note"); x.set_defaults(f=cmd_set)
+    x = sp.add_parser("delete"); x.add_argument("kind", choices=FLOWS); x.add_argument("id")
+    x.add_argument("--by", required=True); x.add_argument("--note"); x.set_defaults(f=cmd_delete)
     x = sp.add_parser("update"); x.add_argument("kind", choices=FLOWS); x.add_argument("id"); x.add_argument("pairs", nargs="+")
     x.add_argument("--by", required=True); x.set_defaults(f=cmd_update)
     x = sp.add_parser("review"); x.add_argument("id"); x.add_argument("result", choices=["通过", "打回"])

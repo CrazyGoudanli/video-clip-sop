@@ -551,6 +551,8 @@ def action(a):
         return True, "已解除等待,下一次检查就会重试"
     if kind == "封面重做":
         return cover_redo(a)
+    if kind == "保存自定义封面":
+        return save_custom_cover(a)
     if kind == "上传参考":
         return upload_ref(a)
     if not ID_RE.match(oid):
@@ -747,6 +749,62 @@ def add_cover_note(folder, text):
     head = "" if f.exists() else "# 你对这条封面的要求(AI 做封面前先读)\n\n"
     with open(f, "a") as fh:
         fh.write(head + f"- {time.strftime('%m-%d %H:%M')} {text}\n")
+
+
+def save_custom_cover(a):
+    """接收封面工坊 Canvas 导出的高清封面(竖版 + 可选同步导出的横版),保存到 封面/ 并通过 db.py 登记。"""
+    cid = a.get("id", "")
+    if not ID_RE.match(cid):
+        return False, "切片 ID 不合法"
+    k, pubs = clip_row(cid)
+    if not k or not k.get("本地文件夹"):
+        return False, "找不到这条视频的文件夹"
+    v_b64 = (a.get("竖版数据") or "").strip()
+    h_b64 = (a.get("横版数据") or "").strip()
+    ratio = str(a.get("比例") or "3:4")
+    if not v_b64:
+        return False, "缺少封面图片数据"
+    try:
+        v_bytes = base64.b64decode(v_b64.split(",")[-1], validate=True)
+        h_bytes = base64.b64decode(h_b64.split(",")[-1], validate=True) if h_b64 else None
+    except ValueError:
+        return False, "封面图片编码无效"
+    if len(v_bytes) > 12_000_000 or (h_bytes and len(h_bytes) > 12_000_000):
+        return False, "封面图片体积不能超过 12 MB"
+
+    cdir = _cover_dir(k["本地文件夹"], "")
+    if not cdir:
+        return False, "封面目录不合法"
+    cdir.mkdir(parents=True, exist_ok=True)
+    ts = time.strftime("%H%M%S")
+    safe_r = ratio.replace(":", "x")
+    v_file = cdir / f"封面工坊_{safe_r}_{ts}.png"
+    v_file.write_bytes(v_bytes)
+    v_rel = str(v_file.relative_to(ROOT))
+    h_rel = ""
+    if h_bytes:
+        h_file = cdir / f"封面工坊_横4x3_{ts}.png"
+        h_file.write_bytes(h_bytes)
+        h_rel = str(h_file.relative_to(ROOT))
+
+    # 同步登记到所有草稿状态的发布记录
+    targets = [p["publish_id"] for p in pubs if p["状态"] == "草稿"]
+    if not targets:
+        return True, f"已保存高清封面到 {v_rel}"
+    outs, ok = [], True
+    style_note = str(a.get("备注") or f"封面工坊自制({ratio})")[:200]
+    for pid in targets:
+        pairs = [f"封面竖={v_rel}", f"备注=工作台封面工坊:{style_note}"]
+        if h_rel:
+            pairs.append(f"封面横={h_rel}")
+        else:
+            pairs.append("封面横=")
+        o, t = run_db("update", "pub", pid, *pairs, "--by", "人工")
+        ok &= o
+        outs.append(t)
+    decide("选封面", cid, v_rel, "", f"封面工坊,{ratio}", style_note)
+    clear_cooldown([cid, *targets])
+    return ok, ("已保存高清竖版+横版封面，可直接进入确认发布" if h_rel else f"已保存高清封面 ({ratio})")
 
 
 def cover_redo(a):

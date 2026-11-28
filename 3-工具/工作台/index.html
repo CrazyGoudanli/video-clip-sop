@@ -766,14 +766,17 @@ main {
   overflow: hidden;
   transition: transform 180ms var(--ease-out), border-color 180ms, background 180ms;
 }
+.studio-card:not(.active-gate) { opacity: 0.56; }
 .studio-card:hover {
   transform: translateY(-2px);
   border-color: var(--border-strong);
   background: var(--bg-card-hover);
+  opacity: 1;
 }
 .studio-card.active-gate {
-  border-color: rgba(56, 189, 248, 0.45);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 28px rgba(0, 0, 0, 0.35);
+  border-color: rgba(56, 189, 248, 0.52);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 1px rgba(56, 189, 248, 0.18), 0 12px 28px rgba(0, 0, 0, 0.35);
+  opacity: 1;
 }
 .studio-card.c-cyan { background: linear-gradient(135deg, rgba(14, 42, 66, 0.65) 0%, #131722 72%); }
 .studio-card.c-violet { background: linear-gradient(135deg, rgba(44, 29, 74, 0.65) 0%, #131722 72%); }
@@ -1385,10 +1388,134 @@ video { width: 100%; background: #000; border-radius: 12px; max-height: 420px; b
   transition: all 150ms;
 }
 .cov:hover { border-color: var(--border-strong); transform: translateY(-1px); }
-.cov.sel { border-color: var(--accent-cyan); background: rgba(56, 189, 248, 0.09); }
-.cov img { width: 100%; height: 196px; object-fit: cover; border-radius: 8px; display: block; }
-.cov.small img { height: 116px; }
-.cov .dim { margin-top: 6px; font-size: 12px; }
+.cov.sel { border-color: var(--accent-cyan); background: rgba(56, 189, 248, 0.09); box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.25); }
+.cov img { width: 100%; aspect-ratio: 3 / 4; height: auto; object-fit: contain; background: #07090e; border-radius: 8px; display: block; }
+.cov.land img { aspect-ratio: 4 / 3; }
+.cov.small img { height: 116px; aspect-ratio: auto; }
+.cov .dim { margin-top: 7px; font-size: 12px; display: flex; align-items: center; justify-content: space-between; padding: 0 2px; }
+
+/* 顶部智能任务指挥舱 */
+.mission-panel {
+  padding: 18px 22px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: radial-gradient(75% 120% at 15% 0%, rgba(56, 189, 248, 0.11), transparent 65%);
+}
+.mission-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(52, 211, 153, 0.09);
+  border: 1px solid rgba(52, 211, 153, 0.24);
+  font-size: 12.5px;
+  color: #a7f3d0;
+}
+.mission-banner.warn {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.28);
+  color: #fde68a;
+}
+.mission-main { display: flex; align-items: center; gap: 16px; }
+.mission-thumb {
+  width: 68px;
+  height: 90px;
+  border-radius: 11px;
+  overflow: hidden;
+  border: 1px solid var(--border-mid);
+  background: #0b0e16;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.mission-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mission-copy { flex: 1; min-width: 0; }
+.mission-eyebrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+.mission-title { font-size: 16.5px; font-weight: 650; color: #ffffff; line-height: 1.35; }
+.mission-hint { font-size: 13px; color: var(--text-secondary); margin-top: 4px; line-height: 1.55; }
+.mission-steps {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+.mstep {
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+.mstep.done { color: #6ee7b7; border-color: rgba(52, 211, 153, 0.24); background: rgba(52, 211, 153, 0.08); }
+.mstep.now { color: #ffffff; font-weight: 600; border-color: rgba(56, 189, 248, 0.55); background: rgba(56, 189, 248, 0.18); }
+
+/* 在线封面工坊编辑器 (Cover Studio) */
+.cs-mode-tabs {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  gap: 3px;
+  margin-bottom: 14px;
+}
+.cs-mode-btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 140ms;
+}
+.cs-mode-btn.on { background: #ffffff; color: #07080c; font-weight: 600; }
+.cs-stage-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #080a10;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.cs-canvas {
+  max-width: 100%;
+  max-height: 360px;
+  border-radius: 10px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  cursor: grab;
+  touch-action: none;
+}
+.cs-canvas:active { cursor: grabbing; }
+.cs-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.cs-pill {
+  padding: 5px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 140ms;
+}
+.cs-pill:hover { color: #fff; border-color: var(--border-strong); }
+.cs-pill.on { background: rgba(56, 189, 248, 0.18); border-color: rgba(56, 189, 248, 0.55); color: #e0f2fe; font-weight: 600; }
+.cs-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cs-slider-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.cs-slider-row label { font-size: 12px; color: var(--text-secondary); width: 78px; flex: none; }
+.cs-slider-row input[type=range] { flex: 1; accent-color: #38bdf8; }
+.cs-slider-row span { font-size: 11.5px; color: var(--text-muted); width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
 
 label.f { display: block; font-size: 12.5px; font-weight: 500; color: var(--text-secondary); margin: 14px 0 6px; }
 input[type="text"], input:not([type]), textarea {
@@ -1964,7 +2091,10 @@ function board() {
   const inboxN = (S.收件 || []).length;
   const auto = (S.自动处理 || {}).开启;
 
-  // 若待办为空且有其它任务，自动切到非空标签避免空白困惑
+  // 智能聚焦标签：绝不把用户留在空的「AI 处理队列 0」看着空白发呆
+  if (feedTab === "ai" && !aiQueue.length && mine.length) {
+    feedTab = "todo";
+  }
   if (feedTab === "todo" && !mine.length && (active.length || failed.length)) {
     if (aiQueue.length) feedTab = "ai";
     else if (published.length) feedTab = "pub";
@@ -1990,6 +2120,30 @@ function board() {
     ["6-发布", "定时发布"]
   ];
 
+  // 挑出此刻最优先需要用户处理的焦点任务（优先人类关卡：确认发布 > 选封面 > 看成片 > 挑片段 > 需处理）
+  const gateRank = { auth: 1, coverpick: 2, review: 3, pick: 4 };
+  const focusItem = mine.length
+    ? [...mine].sort((a, b) => ((a.state === "me" ? gateRank[a.col] || 5 : 9) - (b.state === "me" ? gateRank[b.col] || 5 : 9)))[0]
+    : null;
+  const fullChain = ["整理", "转写选片", "挑片段", "剪辑成片", "看成片", "文案&封面", "选封面", "确认发布"];
+  const colToChainIdx = { inbox: 0, sort: 0, recap: 1, pick: 2, cut: 3, review: 4, copy: 5, cover: 5, coverpick: 6, auth: 7, pub: 8, data: 8 };
+  const focusStepIdx = focusItem ? (colToChainIdx[focusItem.col] ?? 1) : 0;
+  const focusGuide = {
+    pick: { done: "AI 已完成转写并拆出高光候选", next: "勾选想剪的片段并确认，AI 将自动执行竖屏精剪", cta: "立即去挑片段 →" },
+    review: { done: "AI 已完成竖屏精剪与字幕包装", next: "预览成片点「通过」，通过后 AI 将自动撰写爆款文案并生成封面", cta: "立即去看成片 →" },
+    coverpick: { done: "AI 已写好标题文案并生成 3 张候选封面", next: "选一张封面（或在封面工坊改字/换比例/裁剪），选定后进入最终定时发布", cta: "立即去选封面 →" },
+    auth: { done: "成片、文案与横竖版封面已全部就绪", next: "核对标题并点击确认，系统将设为定时发布（绝不立即发）", cta: "立即确认发布 →" }
+  };
+  const focusMeta = focusItem
+    ? (focusItem.state === "err"
+        ? { done: "上一环节未达标或中断", next: "点开可查看具体原因，支持重试、放弃或直接从 SQLite 移除", cta: "立即去处理 →" }
+        : (focusGuide[focusItem.col] || { done: "上一环节已完成", next: "点开完成本步审核即可自动推进到下一阶段", cta: "立即处理 →" }))
+    : null;
+  const focusThumb = focusItem
+    ? ((focusItem.type === "clip" && ((focusItem.k.封面候选 && focusItem.k.封面候选[0] && file(focusItem.k.封面候选[0])) || focusItem.k.视频缩略图))
+      || (focusItem.type === "source" && focusItem.s.视频缩略图) || "")
+    : "";
+
   const dockTitle = uploadMsg
     ? uploadMsg
     : busyNow
@@ -1997,19 +2151,15 @@ function board() {
     : inboxN
     ? `发现 ${inboxN} 个新录像可开始处理`
     : nextAi
-    ? `待执行 AI 环节：${nextAi.说明}`
+    ? `轮到 AI 自动执行：${nextAi.说明}`
     : "导入原始长录像开始创作";
 
-  const errMine = mine.filter(x => x.state === "err").length;
-  const clipMine = mine.length - errMine;
-  const dockSummary = clipMine
-    ? `当前有 <b>${clipMine} 条短视频</b>剪好等你拍板${inboxN ? `，另有 ${inboxN} 个新录像待整理` : ""}。点击下方任一关卡即可开始审核。`
-    : errMine
-    ? `有 <b>${errMine} 项任务</b>需要你点开处理或重试；也可随时拖拽或按 <span class="kbd">⌘V</span> 粘贴新视频继续导入。`
-    : busyNow
-    ? `正在本机后台处理 ${(L && L.对象 && L.对象[0]) || "当前视频"}，结果会自动写入本地 SQLite 数据库。`
+  const dockSummary = busyNow
+    ? `正在本机后台处理 ${(L && L.对象 && L.对象[0]) || "当前视频"}，完成后会自动通知你并切换到下一步。`
     : inboxN
     ? `视频已进入本地「待加工」目录，点击右侧「立即运行 AI 处理」即可开始无损整理与语音转写。`
+    : nextAi
+    ? `你的上一步拍板已生效！点击右侧白色主按钮，AI 将自动执行「${esc(nextAi.说明)}」（对象：${esc((nextAi.对象 || []).join("、"))}）。`
     : `支持拖拽视频、点击选择，或在访达复制视频后直接按 <span class="kbd">⌘V</span> 粘贴进来，数据直存本机 SQLite。`;
 
   return `
@@ -2084,6 +2234,32 @@ function board() {
               </button>
             </div>
           </div>
+        ` : focusItem ? `
+          <div class="mission-panel">
+            <div class="mission-banner ${focusItem.state === "err" ? "warn" : ""}">
+              <span>${focusItem.state === "err" ? "⚠ 有任务需要你决定处理方式" : `✓ ${esc(focusMeta.done)}`}</span>
+              <span style="opacity:0.85">共 ${mine.length} 项待你拍板</span>
+            </div>
+            <div class="mission-main">
+              <div class="mission-thumb">
+                ${focusThumb ? `<img src="${esc(focusThumb)}" alt="">` : ic("film", 22)}
+              </div>
+              <div class="mission-copy">
+                <div class="mission-eyebrow">
+                  <span class="pill ${focusItem.state === "err" ? "err" : "me"}">当前步骤：${esc(focusItem.label)}</span>
+                  <span class="dim" style="font-size:12px">${esc(focusItem.id)}</span>
+                </div>
+                <div class="mission-title">${esc(focusItem.title)}</div>
+                <div class="mission-hint"><b>下一步该做什么：</b>${esc(focusMeta.next)}</div>
+              </div>
+            </div>
+            <div class="mission-steps">
+              ${fullChain.map((nm, idx) => {
+                const cls = idx < focusStepIdx ? "done" : idx === focusStepIdx ? "now" : "";
+                return `<span class="mstep ${cls}">${idx < focusStepIdx ? "✓ " : idx === focusStepIdx ? "● " : ""}${esc(nm)}</span>`;
+              }).join("")}
+            </div>
+          </div>
         ` : `
           <div class="dock-main">
             <div class="dock-upload-tile" onclick="triggerVideoPicker()" title="点击选择本地视频文件，或拖拽 / ⌘V 粘贴视频">
@@ -2102,13 +2278,16 @@ function board() {
             <button class="dock-chip" onclick="openSettings()">${ic("scissors", 13)} 剪辑：${esc(S.配置.剪辑工具 || "ffmpeg")}</button>
             <span class="dock-chip static">9:16 竖屏 · ${esc((S.配置.成片时长 || [60, 90]).join("–"))}s</span>
             <button class="dock-chip" onclick="pasteFromClipboard()" title="把访达里 ⌘C 复制的视频直接粘贴进来">⌘V 粘贴视频</button>
+            ${focusItem && !inboxN ? `<button class="dock-chip" onclick="triggerVideoPicker()">+ 导入新录像</button>` : ""}
           </div>
           <div class="btns">
             <button class="btn sm" onclick="openFolder('待加工')" title="超大原片可直接拖入访达文件夹">${ic("folder", 14)} 打开待加工目录</button>
             ${busyNow
               ? `<button class="btn pill-cta" disabled><span class="dot busy"></span> AI 处理中…</button>`
+              : focusItem && !inboxN
+              ? `<button class="btn pill-cta pri" onclick="openItem('${focusItem.type}','${esc(focusItem.id)}')">${esc(focusMeta.cta)}</button>`
               : canRunAi
-              ? `<button class="btn pill-cta pri" onclick="runAiNow()">${ic("play", 14)} 立即运行 AI 处理</button>`
+              ? `<button class="btn pill-cta pri" onclick="runAiNow()">${ic("play", 14)} ${nextAi && !inboxN ? `启动 AI：${esc(nextAi.说明)}` : "立即运行 AI 处理"}</button>`
               : `<button class="btn pill-cta pri" onclick="triggerVideoPicker()">${ic("plus", 15)} 选择视频导入</button>`
             }
           </div>
@@ -2992,6 +3171,9 @@ function renderDrawer() {
     vid.addEventListener("timeupdate", () => { if (e && vid.currentTime > e) vid.pause(); });
   }
   bindDrop();
+  if (x.col === "coverpick" && csMode[x.id] === "edit") {
+    initCoverStudio(x.id);
+  }
 }
 
 const TAGS = {
@@ -3055,24 +3237,128 @@ function nextBox(x) {
       </div>`;
     case "coverpick": {
       const pub = activePubs(ps).find(p => p.状态 === "草稿" && !p.封面竖文件) || ps[0];
+      const mode = csMode[id] || "pick";
+      const st = getCsState(id, k);
+      const ratioLabels = { "3:4": "3:4 竖版 (1080×1440)", "4:3": "4:3 横版 (1440×1080)", "9:16": "9:16 全屏 (1080×1920)", "16:9": "16:9 宽屏 (1920×1080)" };
+      const styleLabels = [
+        ["obsidian", "黑金电影"],
+        ["swiss", "瑞士亮白"],
+        ["crimson", "暗红爆款"],
+        ["cyber", "赛博霓虹"],
+        ["video", "实拍剧照压字"],
+        ["crop", "底图自由裁剪"]
+      ];
+      const hasPhoto = st.style === "video" || st.style === "crop";
+      const maxSec = Math.max(5, Math.floor(k.成片时长_秒 || 60));
       return `<div class="task-panel me">
-        <div class="task-lead">第三步 · 点选一张你最喜欢的封面</div>
-        <div class="dim">选中竖版后，AI 会自动帮你延展出配套横版封面。</div>
-        <div class="covers">
-          ${k.封面候选.map(c => `<div class="cov ${coverSel[id] === c ? "sel" : ""}" onclick="coverSel['${id}']=this.dataset.c;renderDrawerKeep()" data-c="${esc(c)}">
-            <img src="${file(c)}">
-            <div class="dim">${esc(c.split("/").pop().replace(/\.\w+$/, "").replace(/^[a-z]_/, ""))}</div>
-          </div>`).join("")}
+        <div class="task-lead">第三步 · 选封面或在线精修裁剪</div>
+        <div class="cs-mode-tabs">
+          <button class="cs-mode-btn ${mode === "pick" ? "on" : ""}" onclick="csMode['${id}']='pick';renderDrawerKeep()">① 选候选封面 (${k.封面候选.length})</button>
+          <button class="cs-mode-btn ${mode === "edit" ? "on" : ""}" onclick="csMode['${id}']='edit';renderDrawerKeep()">② 在线编辑 · 换比例 · 裁剪</button>
         </div>
-        <div class="btns" style="margin-top:16px">
-          <button class="btn pri" ${coverSel[id] ? "" : "disabled"} onclick="pickCover('${id}','${esc(pub.publish_id)}')">${ic("check", 14)} 就用这张封面</button>
-        </div>
-        <details style="margin-top:16px"><summary>三张都不满意？填写要求或传参考图重做</summary>
-          ${tagRow("cv-" + id, TAGS.cover)}
-          <textarea id="cnote" placeholder="例如：字再大一点；换成深蓝底色"></textarea>
-          <div class="drop" id="drop" onclick="$('#reffile').click()">${ic("upload", 15)} 点击或拖入参考封面图<input type="file" id="reffile" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="uploadRef('${id}',this.files[0])"></div>
-          <div class="btns" style="margin-top:10px"><button class="btn sm" onclick="redoCover('${id}')">按要求重新生成</button></div>
-        </details>
+
+        ${mode === "pick" ? `
+          <div class="dim">完整 3:4 比例展示（绝不裁切内容）；选中竖版后可直接采用，或点右侧进工坊改字/换比例/裁剪。</div>
+          <div class="covers">
+            ${k.封面候选.map(c => `<div class="cov ${coverSel[id] === c ? "sel" : ""}" onclick="coverSel['${id}']=this.dataset.c;renderDrawerKeep()" data-c="${esc(c)}">
+              <img src="${file(c)}" alt="">
+              <div class="dim"><span>${esc(c.split("/").pop().replace(/\.\w+$/, "").replace(/^[a-z]_/, ""))}</span><span style="opacity:0.65">3:4</span></div>
+            </div>`).join("")}
+          </div>
+          <div class="btns" style="margin-top:16px">
+            <button class="btn pri" ${coverSel[id] ? "" : "disabled"} onclick="pickCover('${id}','${esc(pub.publish_id)}')">${ic("check", 14)} 就用这张封面</button>
+            <button class="btn sm" onclick="openCoverStudioFrom('${id}')">${ic("sliders", 14)} 进封面工坊编辑 / 换比例 / 裁剪</button>
+          </div>
+          <details style="margin-top:16px"><summary>想让 AI 按新要求重新生图？</summary>
+            ${tagRow("cv-" + id, TAGS.cover)}
+            <textarea id="cnote" placeholder="例如：字再大一点；换成亮色背景"></textarea>
+            <div class="drop" id="drop" onclick="$('#reffile').click()">${ic("upload", 15)} 点击或拖入参考封面图<input type="file" id="reffile" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="uploadRef('${id}',this.files[0])"></div>
+            <div class="btns" style="margin-top:10px"><button class="btn sm" onclick="redoCover('${id}')">按要求重新生成</button></div>
+          </details>
+        ` : `
+          <div class="cs-stage-wrap">
+            <canvas id="cs-canvas" class="cs-canvas" data-id="${esc(id)}"></canvas>
+            <div class="dim" style="margin-top:10px;display:flex;align-items:center;gap:12px;font-size:12px">
+              <span id="cs-dim-badge">${esc(ratioLabels[st.ratio] || st.ratio)}</span>
+              ${hasPhoto ? "<span>· 可直接在画布上按住拖动裁剪构图</span>" : ""}
+              <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" ${st.grid ? "checked" : ""} onchange="csUpdate('${id}','grid',this.checked)"> 安全区网格</label>
+            </div>
+          </div>
+
+          <label class="f" style="margin-top:0">画面比例（一键切换，自动重排安全区绝不截字）</label>
+          <div class="cs-pills">
+            ${Object.entries(ratioLabels).map(([r, lbl]) => `<button class="cs-pill ${st.ratio === r ? "on" : ""}" onclick="csUpdate('${id}','ratio','${r}',true)">${esc(lbl)}</button>`).join("")}
+          </div>
+
+          <label class="f">视觉风格（6 套截然不同的排版与底图模式）</label>
+          <div class="cs-pills">
+            ${styleLabels.map(([v, lbl]) => `<button class="cs-pill ${st.style === v ? "on" : ""}" onclick="csSetStyle('${id}','${v}')">${esc(lbl)}</button>`).join("")}
+          </div>
+
+          <div class="cs-grid2" style="margin-top:6px">
+            <div>
+              <label class="f">第一行主标题</label>
+              <input type="text" value="${esc(st.line1)}" oninput="csUpdate('${id}','line1',this.value)">
+            </div>
+            <div>
+              <label class="f">第二行标题（用【】标高亮词）</label>
+              <input type="text" value="${esc(st.line2)}" oninput="csUpdate('${id}','line2',this.value)">
+            </div>
+          </div>
+          <label class="f">顶部角标文字（留空不显示，勿写期号日期）</label>
+          <input type="text" value="${esc(st.badge)}" placeholder="例如：AI 剧本心法（可选）" oninput="csUpdate('${id}','badge',this.value)">
+
+          <div class="cs-slider-row">
+            <label>标题字号</label>
+            <input type="range" min="70" max="130" value="${st.fontScale}" oninput="csUpdate('${id}','fontScale',+this.value);this.nextElementSibling.textContent=this.value+'%'">
+            <span>${st.fontScale}%</span>
+          </div>
+          <div class="cs-slider-row">
+            <label>文字纵位置</label>
+            <input type="range" min="18" max="82" value="${st.textY}" oninput="csUpdate('${id}','textY',+this.value);this.nextElementSibling.textContent=this.value+'%'">
+            <span>${st.textY}%</span>
+          </div>
+
+          ${hasPhoto ? `
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-subtle)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+                <span class="dim" style="font-weight:600;color:#fff">底图裁剪与构图控制</span>
+                <div class="btns">
+                  <input type="file" id="cs-bg-file" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="csLoadLocalBg('${id}',this.files[0]);this.value=''">
+                  <button class="btn xs" onclick="$('#cs-bg-file').click()">${ic("upload", 12)} 上传本地图片裁剪</button>
+                  <button class="btn xs" onclick="csResetCrop('${id}')">重置裁剪</button>
+                </div>
+              </div>
+              ${st.style === "video" && k.成片 ? `
+                <div class="cs-slider-row">
+                  <label>视频抽帧</label>
+                  <input type="range" min="1" max="${maxSec}" value="${st.frameAt}" onchange="csLoadVideoFrame('${id}',+this.value)" oninput="this.nextElementSibling.textContent=this.value+'s'">
+                  <span>${st.frameAt}s</span>
+                </div>
+              ` : ""}
+              <div class="cs-slider-row">
+                <label>裁剪缩放</label>
+                <input type="range" min="100" max="260" value="${Math.round(st.zoom * 100)}" oninput="csUpdate('${id}','zoom',this.value/100);this.nextElementSibling.textContent=(this.value/100).toFixed(2)+'x'">
+                <span>${st.zoom.toFixed(2)}x</span>
+              </div>
+              <div class="cs-slider-row">
+                <label>水平裁剪 X</label>
+                <input type="range" min="-50" max="50" value="${st.panX}" oninput="csUpdate('${id}','panX',+this.value);this.nextElementSibling.textContent=this.value+'%'">
+                <span>${st.panX}%</span>
+              </div>
+              <div class="cs-slider-row">
+                <label>垂直裁剪 Y</label>
+                <input type="range" min="-50" max="50" value="${st.panY}" oninput="csUpdate('${id}','panY',+this.value);this.nextElementSibling.textContent=this.value+'%'">
+                <span>${st.panY}%</span>
+              </div>
+            </div>
+          ` : ""}
+
+          <div class="btns" style="margin-top:16px">
+            <button class="btn pri" id="cs-save-btn" onclick="saveCoverStudio('${id}')">${ic("check", 14)} 保存并设为封面（同步出横版）</button>
+            <button class="btn sm" onclick="downloadCoverStudio('${id}')">下载高清 PNG</button>
+          </div>
+        `}
       </div>`;
     }
     case "auth": {
@@ -3082,8 +3368,8 @@ function nextBox(x) {
       return `<div class="task-panel me">
         <div class="task-lead">第四步 · 核对标题与封面，确认定时发布</div>
         <div class="covers" style="grid-template-columns:repeat(auto-fill,minmax(150px,190px))">
-          ${p0.封面竖文件 ? `<div class="cov" style="cursor:default"><img src="${file(p0.封面竖文件)}"><div class="dim">竖版 3:4</div></div>` : ""}
-          ${p0.封面横文件 ? `<div class="cov" style="cursor:default"><img src="${file(p0.封面横文件)}" style="object-fit:contain"><div class="dim">横版 4:3</div></div>` : ""}
+          ${p0.封面竖文件 ? `<div class="cov" style="cursor:default"><img src="${file(p0.封面竖文件)}"><div class="dim"><span>竖版 3:4</span></div></div>` : ""}
+          ${p0.封面横文件 ? `<div class="cov land" style="cursor:default"><img src="${file(p0.封面横文件)}"><div class="dim"><span>横版 4:3</span></div></div>` : ""}
         </div>
         ${ready.map(p => `<div class="plat-sec">
           <h4><input type="checkbox" ${pubSel[p.publish_id] ? "checked" : ""} onchange="pubSel['${esc(p.publish_id)}']=this.checked"> 发布到 ${esc(p.平台)}</h4>
@@ -3149,6 +3435,351 @@ async function review(id, res) {
   const j = await post({ 动作: "看片", id, 结论: res, 原因: r, 标签: tags });
   if (!j.成功) { toast(j.输出 || j.错误 || "操作未生效", false); return; }
   afterGate(id, "review", res === "通过" ? "成片已通过" : "已打回重剪");
+}
+
+/* ================= 在线封面工坊编辑器 (Cover Studio: 改字 / 换比例 / 裁剪) ================= */
+const CS_RATIOS = { "3:4": [1080, 1440], "4:3": [1440, 1080], "9:16": [1080, 1920], "16:9": [1920, 1080] };
+let csMode = {}, csState = {}, csImages = {};
+
+function getCsState(id, k) {
+  if (!csState[id]) {
+    const raw = (k && k.封面字) || (k && k.标题) || "写好标题\n【突出关键词】";
+    const parts = raw.includes("\n") ? raw.split("\n") : [raw.slice(0, Math.ceil(raw.length / 2)), raw.slice(Math.ceil(raw.length / 2))];
+    csState[id] = {
+      ratio: "3:4",
+      style: "obsidian",
+      line1: (parts[0] || "").trim(),
+      line2: (parts[1] || "").trim(),
+      badge: "",
+      fontScale: 100,
+      textY: 38,
+      zoom: 1.0,
+      panX: 0,
+      panY: 0,
+      frameAt: 12,
+      grid: false,
+      bgUrl: ""
+    };
+  }
+  return csState[id];
+}
+
+function openCoverStudioFrom(id) {
+  const k = S.切片.find(c => c.clip_id === id);
+  const st = getCsState(id, k);
+  if (coverSel[id]) {
+    st.bgUrl = file(coverSel[id]);
+    csLoadImage(id, st.bgUrl);
+  }
+  csMode[id] = "edit";
+  renderDrawer();
+}
+
+function csSetStyle(id, style) {
+  const k = S.切片.find(c => c.clip_id === id);
+  const st = getCsState(id, k);
+  st.style = style;
+  if (style === "video") {
+    st.textY = 74;
+    if (k && k.成片) csLoadVideoFrame(id, st.frameAt);
+  } else if (style === "crop") {
+    st.textY = 76;
+    const src = st.bgUrl || (coverSel[id] ? file(coverSel[id]) : (k && k.封面候选 && k.封面候选[0] ? file(k.封面候选[0]) : ""));
+    if (src) { st.bgUrl = src; csLoadImage(id, src); }
+  } else {
+    st.textY = 38;
+  }
+  renderDrawerKeep();
+}
+
+function csUpdate(id, key, val, rerender = false) {
+  const k = S.切片.find(c => c.clip_id === id);
+  const st = getCsState(id, k);
+  st[key] = val;
+  if (rerender) renderDrawerKeep();
+  else drawCoverPreview(id);
+}
+
+function csResetCrop(id) {
+  const k = S.切片.find(c => c.clip_id === id);
+  const st = getCsState(id, k);
+  st.zoom = 1.0; st.panX = 0; st.panY = 0;
+  renderDrawerKeep();
+}
+
+function csLoadImage(id, url) {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => { csImages[id] = img; drawCoverPreview(id); };
+  img.src = url;
+}
+
+function csLoadVideoFrame(id, sec) {
+  const k = S.切片.find(c => c.clip_id === id);
+  const st = getCsState(id, k);
+  st.frameAt = sec;
+  const srcVid = (k && k.预览 && k.预览.文件) || (k && k.成片);
+  if (!srcVid) return;
+  const at = (k && k.预览 && k.预览.文件) ? Math.max(1, (k.预览.起 || 0) + sec) : sec;
+  const url = `/thumb?path=${encodeURIComponent(srcVid)}&at=${at}`;
+  st.bgUrl = url;
+  csLoadImage(id, url);
+}
+
+function csLoadLocalBg(id, f) {
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const k = S.切片.find(c => c.clip_id === id);
+    const st = getCsState(id, k);
+    st.bgUrl = rd.result;
+    st.style = "crop";
+    csLoadImage(id, rd.result);
+    renderDrawerKeep();
+  };
+  rd.readAsDataURL(f);
+}
+
+function initCoverStudio(id) {
+  const k = S.切片.find(c => c.clip_id === id);
+  const st = getCsState(id, k);
+  if ((st.style === "video" || st.style === "crop") && !csImages[id]) {
+    if (st.bgUrl) csLoadImage(id, st.bgUrl);
+    else if (st.style === "video") csLoadVideoFrame(id, st.frameAt);
+  }
+  drawCoverPreview(id);
+  const cv = $("#cs-canvas");
+  if (!cv || cv._boundDrag) return;
+  cv._boundDrag = true;
+  let drag = null;
+  cv.onpointerdown = e => {
+    const s = csState[id];
+    if (!s || (s.style !== "video" && s.style !== "crop")) return;
+    cv.setPointerCapture(e.pointerId);
+    drag = { x: e.clientX, y: e.clientY, px: s.panX, py: s.panY };
+  };
+  cv.onpointermove = e => {
+    if (!drag) return;
+    const s = csState[id];
+    const r = cv.getBoundingClientRect();
+    s.panX = Math.max(-50, Math.min(50, Math.round(drag.px + ((e.clientX - drag.x) / Math.max(1, r.width)) * 100)));
+    s.panY = Math.max(-50, Math.min(50, Math.round(drag.py + ((e.clientY - drag.y) / Math.max(1, r.height)) * 100)));
+    drawCoverPreview(id);
+  };
+  cv.onpointerup = () => { drag = null; };
+}
+
+function drawCoverPreview(id) {
+  const cv = $("#cs-canvas");
+  if (!cv) return;
+  const k = S.切片.find(c => c.clip_id === id);
+  const st = getCsState(id, k);
+  const [W, H] = CS_RATIOS[st.ratio] || [1080, 1440];
+  const scale = 0.4;
+  cv.width = Math.round(W * scale);
+  cv.height = Math.round(H * scale);
+  renderCoverCanvas(cv, st, csImages[id], true);
+}
+
+function parseCoverSegs(line, normal, accent) {
+  return String(line || "").split(/(【[^】]*】)/g).filter(Boolean).map(p =>
+    p.startsWith("【") && p.endsWith("】") ? { t: p.slice(1, -1), c: accent, hi: true } : { t: p, c: normal, hi: false }
+  );
+}
+
+function renderCoverCanvas(cv, st, bgImg, showGrid) {
+  const ctx = cv.getContext("2d");
+  const W = cv.width, H = cv.height;
+  const u = Math.min(W, H);
+  ctx.clearRect(0, 0, W, H);
+
+  const isLight = st.style === "swiss";
+  const accentMap = { obsidian: "#FCD34D", swiss: "#DC2626", crimson: "#FDE047", cyber: "#38BDF8", video: "#FCD34D", crop: "#FCD34D" };
+  const accent = accentMap[st.style] || "#FCD34D";
+  const textCol = isLight ? "#12141A" : "#FFFFFF";
+
+  // 1. 背景层
+  if (st.style === "obsidian") {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#070A12"); g.addColorStop(1, "#121726");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const rg = ctx.createRadialGradient(W * 0.5, H * 0.25, u * 0.05, W * 0.5, H * 0.25, u * 0.65);
+    rg.addColorStop(0, "rgba(245, 190, 72, 0.26)"); rg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = Math.max(1.5, u * 0.002);
+    const p = u * 0.055;
+    ctx.beginPath(); ctx.roundRect(p, p, W - 2 * p, H - 2 * p, u * 0.032); ctx.stroke();
+    ctx.fillStyle = "#F5BE48";
+    ctx.beginPath(); ctx.roundRect(W * 0.38, p + u * 0.04, W * 0.24, u * 0.008, 99); ctx.fill();
+  } else if (st.style === "swiss") {
+    ctx.fillStyle = "#F6F3EC"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#DC2626"; ctx.fillRect(0, 0, W, u * 0.022);
+    ctx.fillStyle = "#DC2626"; ctx.fillRect(W * 0.08, H * 0.11, u * 0.12, u * 0.013);
+    ctx.fillStyle = "#12141A"; ctx.fillRect(W * 0.08, H * 0.72, W * 0.84, Math.max(2, u * 0.004));
+    ctx.fillStyle = "#12141A";
+    ctx.beginPath(); ctx.roundRect(W * 0.08, H * 0.76, W * 0.5, H * 0.16, u * 0.022); ctx.fill();
+    ctx.strokeStyle = "#12141A"; ctx.lineWidth = Math.max(2, u * 0.004);
+    ctx.beginPath(); ctx.roundRect(W * 0.62, H * 0.76, W * 0.3, H * 0.16, u * 0.022); ctx.stroke();
+    ctx.fillStyle = "#DC2626";
+    ctx.beginPath(); ctx.arc(W * 0.77, H * 0.84, Math.min(W * 0.1, H * 0.055), 0, Math.PI * 2); ctx.fill();
+  } else if (st.style === "crimson") {
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, "#1C070B"); g.addColorStop(0.55, "#450A14"); g.addColorStop(1, "#0B0609");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const rg = ctx.createRadialGradient(W * 0.5, H * 0.45, u * 0.04, W * 0.5, H * 0.45, u * 0.72);
+    rg.addColorStop(0, "rgba(239, 68, 68, 0.38)"); rg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(253, 224, 71, 0.45)"; ctx.lineWidth = Math.max(2, u * 0.003);
+    ctx.strokeRect(u * 0.05, u * 0.05, W - u * 0.1, H - u * 0.1);
+  } else if (st.style === "cyber") {
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, "#0A1028"); g.addColorStop(1, "#1C0C34");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const g1 = ctx.createRadialGradient(W * 0.22, H * 0.2, 0, W * 0.22, H * 0.2, u * 0.6);
+    g1.addColorStop(0, "rgba(56, 189, 248, 0.35)"); g1.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
+    const g2 = ctx.createRadialGradient(W * 0.8, H * 0.78, 0, W * 0.8, H * 0.78, u * 0.6);
+    g2.addColorStop(0, "rgba(139, 92, 246, 0.35)"); g2.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+    const p = u * 0.075;
+    ctx.fillStyle = "rgba(14, 19, 36, 0.72)";
+    ctx.strokeStyle = "rgba(56, 189, 248, 0.5)"; ctx.lineWidth = Math.max(2, u * 0.003);
+    ctx.beginPath(); ctx.roundRect(p, H * 0.14, W - 2 * p, H * 0.72, u * 0.036); ctx.fill(); ctx.stroke();
+  } else if ((st.style === "video" || st.style === "crop") && bgImg) {
+    ctx.fillStyle = "#080A10"; ctx.fillRect(0, 0, W, H);
+    const baseScale = Math.max(W / bgImg.width, H / bgImg.height) * (st.zoom || 1);
+    const dw = bgImg.width * baseScale, dh = bgImg.height * baseScale;
+    const dx = (W - dw) / 2 + (st.panX / 100) * W;
+    const dy = (H - dh) / 2 + (st.panY / 100) * H;
+    ctx.drawImage(bgImg, dx, dy, dw, dh);
+    // 柔和上下电影暗角遮罩，保证大字清晰可读
+    const ov = ctx.createLinearGradient(0, 0, 0, H);
+    ov.addColorStop(0, "rgba(5,8,15,0.68)");
+    ov.addColorStop(0.32, "rgba(5,8,15,0.12)");
+    ov.addColorStop(0.58, "rgba(5,8,15,0.18)");
+    ov.addColorStop(1, "rgba(5,8,15,0.88)");
+    ctx.fillStyle = ov; ctx.fillRect(0, 0, W, H);
+  } else {
+    ctx.fillStyle = "#0D111C"; ctx.fillRect(0, 0, W, H);
+  }
+
+  // 2. 文字排版（严格自适应安全宽度，绝不截断！）
+  const lines = [st.line1, st.line2].map(s => (s || "").trim()).filter(Boolean);
+  if (lines.length) {
+    const maxW = W * 0.84;
+    let fsize = Math.round(u * 0.135 * ((st.fontScale || 100) / 100));
+    const fontFamily = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
+    const measureLine = (ln, sz) => {
+      ctx.font = `900 ${sz}px ${fontFamily}`;
+      return parseCoverSegs(ln, textCol, accent).reduce((acc, s) => acc + ctx.measureText(s.t).width + (isLight && s.hi ? sz * 0.24 : 0), 0);
+    };
+    while (fsize > 20 && Math.max(...lines.map(l => measureLine(l, fsize))) > maxW) fsize -= 2;
+
+    const lh = fsize * 1.28;
+    const totalH = lh * lines.length;
+    const cy = Math.max(totalH / 2 + H * 0.08, Math.min(H - totalH / 2 - H * 0.08, H * ((st.textY || 38) / 100)));
+    let y = cy - totalH / 2 + fsize * 0.88;
+
+    // 可选顶部角标
+    if ((st.badge || "").trim()) {
+      const bsz = Math.round(fsize * 0.34);
+      ctx.font = `700 ${bsz}px ${fontFamily}`;
+      const bw = ctx.measureText(st.badge.trim()).width + bsz * 1.4;
+      const bh = bsz * 1.8;
+      const bx = isLight ? W * 0.08 : (W - bw) / 2;
+      const by = cy - totalH / 2 - bh - fsize * 0.24;
+      ctx.fillStyle = isLight ? "#12141A" : "rgba(255,255,255,0.12)";
+      ctx.strokeStyle = isLight ? "#12141A" : accent;
+      ctx.lineWidth = Math.max(1, u * 0.002);
+      ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 999); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = isLight ? "#FFFFFF" : accent;
+      ctx.fillText(st.badge.trim(), bx + bsz * 0.7, by + bh * 0.68);
+    }
+
+    ctx.font = `900 ${fsize}px ${fontFamily}`;
+    for (const ln of lines) {
+      const segs = parseCoverSegs(ln, textCol, accent);
+      const lw = measureLine(ln, fsize);
+      let x = isLight ? W * 0.08 : (W - lw) / 2;
+      for (const s of segs) {
+        const sw = ctx.measureText(s.t).width;
+        if (isLight && s.hi) {
+          x += fsize * 0.08;
+          ctx.fillStyle = "#DC2626";
+          ctx.beginPath(); ctx.roundRect(x - fsize * 0.08, y - fsize * 0.92, sw + fsize * 0.16, fsize * 1.14, fsize * 0.12); ctx.fill();
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillText(s.t, x, y);
+          x += sw + fsize * 0.16;
+        } else {
+          if (!isLight) {
+            ctx.shadowColor = "rgba(0,0,0,0.75)";
+            ctx.shadowBlur = fsize * 0.18;
+            ctx.shadowOffsetY = fsize * 0.05;
+          }
+          ctx.fillStyle = s.c;
+          ctx.fillText(s.t, x, y);
+          ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+          x += sw;
+        }
+      }
+      y += lh;
+    }
+  }
+
+  // 3. 安全区与三分线参考网格（仅预览时显示，导出时绝不画进去！）
+  if (showGrid && st.grid) {
+    ctx.save();
+    ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+    ctx.setLineDash([6, 6]); ctx.lineWidth = 1;
+    ctx.strokeRect(W * 0.08, H * 0.08, W * 0.84, H * 0.84);
+    for (const k of [1 / 3, 2 / 3]) {
+      ctx.beginPath(); ctx.moveTo(W * k, 0); ctx.lineTo(W * k, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, H * k); ctx.lineTo(W, H * k); ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function exportCoverDataUrl(st, bgImg, overrideRatio) {
+  const r = overrideRatio || st.ratio || "3:4";
+  const [W, H] = CS_RATIOS[r] || [1080, 1440];
+  const off = document.createElement("canvas");
+  off.width = W; off.height = H;
+  renderCoverCanvas(off, { ...st, ratio: r, grid: false }, bgImg, false);
+  return off.toDataURL("image/png");
+}
+
+function downloadCoverStudio(id) {
+  const k = S.切片.find(c => c.clip_id === id);
+  const st = getCsState(id, k);
+  const a = document.createElement("a");
+  a.href = exportCoverDataUrl(st, csImages[id], st.ratio);
+  a.download = `${id}_封面_${st.ratio.replace(":", "x")}.png`;
+  a.click();
+  toast("已下载高清 PNG 封面");
+}
+
+async function saveCoverStudio(id) {
+  const k = S.切片.find(c => c.clip_id === id);
+  const st = getCsState(id, k);
+  const btn = $("#cs-save-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "正在生成高清竖版 + 横版封面…"; }
+  const vUrl = exportCoverDataUrl(st, csImages[id], st.ratio);
+  const hUrl = exportCoverDataUrl(st, csImages[id], st.ratio === "16:9" ? "16:9" : "4:3");
+  const j = await post({
+    动作: "保存自定义封面",
+    id,
+    比例: st.ratio,
+    竖版数据: vUrl,
+    横版数据: hUrl,
+    备注: `${st.style} / ${st.ratio}`
+  });
+  if (!j.成功) {
+    toast(j.输出 || j.错误 || "保存失败", false);
+    if (btn) { btn.disabled = false; btn.textContent = "保存并设为封面（同步出横版）"; }
+    return;
+  }
+  afterGate(id, "coverpick", j.输出 || "封面已保存，下一步请确认发布");
 }
 
 async function pickCover(id, pid) {
@@ -3219,8 +3850,21 @@ async function pollLive() {
   renderLiveSide();
   const sig = JSON.stringify([L && L.在干活, L && L.环节, L && L.对象, L && L.实时进度, L && L.下一步 && L.下一步.环节]);
   const idle = !openId && !$("#drawer").classList.contains("open") && !picked.size && $("#modal").style.display !== "flex" && !searchQ;
-  if (S && wasBusy !== null && wasBusy !== !!(L && L.在干活) && idle) {
-    await load();
+  if (S && wasBusy !== null && wasBusy !== !!(L && L.在干活)) {
+    const justFinished = wasBusy && !(L && L.在干活);
+    if (idle) {
+      await load();
+      if (justFinished) {
+        const nextMine = mineItems();
+        if (nextMine.length) {
+          feedTab = "todo";
+          render();
+          toast(`AI 已完成「${(L && L.上次 && L.上次.环节) || "当前步骤"}」，下一步请拍板：${nextMine[0].label}`);
+        } else {
+          toast(`AI 已完成「${(L && L.上次 && L.上次.环节) || "当前步骤"}」`);
+        }
+      }
+    }
   } else if (S && sig !== liveSig && page === "board" && idle) {
     render();
   } else if (L && L.在干活) {

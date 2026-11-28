@@ -14,6 +14,7 @@ data/.watch_state.json
 data/notion_backup/
 data/备份/
 data/运行日志/
+data/.thumbs/
 data/**/*.db
 data/**/*.log
 

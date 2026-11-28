@@ -50,3 +50,5 @@ tmp/
 *.mkv
 *.m4v
 *.m4a
+3-工具/渲染引擎/remotion-studio/node_modules/
+3-工具/渲染引擎/remotion-studio/public/_render_*

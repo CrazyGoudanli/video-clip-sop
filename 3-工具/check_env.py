@@ -136,6 +136,10 @@ if CFG.get("剪辑工具", "ChatCut") == "ChatCut":
             linked = False
         fix = 'claude mcp add -s user chatcut_desktop -e CHATCUT_MCP_CLIENT=claude_code -- "$HOME/Library/Application Support/ChatCut/chatcut-mcp"'
     add(G, f"{drv} 已接入 ChatCut", linked, "AI", f"`{fix}`")
+elif CFG.get("剪辑工具") == "Remotion":
+    add("剪辑 Remotion", "Node.js", bool(which("node")), "用户", "安装 Node.js 20+")
+    rm_ok = (ROOT / "3-工具/渲染引擎/remotion-studio/node_modules/remotion").exists()
+    add("剪辑 Remotion", "Remotion 动效引擎依赖", rm_ok, "AI", "`npm --prefix 3-工具/渲染引擎/remotion-studio install`")
 else:
     add(G, "剪辑工具", True, detail=CFG.get("剪辑工具"))
 

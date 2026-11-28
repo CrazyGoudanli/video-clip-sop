@@ -809,17 +809,20 @@ SETTINGS = {
                "Codex": {"驱动命令": "zsh 3-工具/脚本/run_codex.sh {prompt}"},
                "Cursor CLI": {"驱动命令": "zsh 3-工具/脚本/run_cursor.sh {prompt}"},
                "Pi": {"驱动命令": "zsh 3-工具/脚本/run_pi.sh {prompt}"}},
-    "剪辑工具": {"ChatCut": {}, "ffmpeg": {}},
+    "剪辑工具": {"Remotion": {}, "ChatCut": {}, "ffmpeg": {}},
 }
 
 
 def settings_options():
     import shutil
     os.environ["PATH"] = os.pathsep.join([str(Path.home() / ".local/bin"), "/opt/homebrew/bin", os.environ.get("PATH", "")])
+    remotion_ready = bool(shutil.which("node")) and (ROOT / "3-工具" / "渲染引擎" / "remotion-studio" / "node_modules" / "remotion").exists()
     have = {"Claude Code": bool(shutil.which("claude")), "Codex": bool(shutil.which("codex")),
             "Cursor CLI": bool(shutil.which("cursor-agent") or shutil.which("agent")), "Pi": bool(shutil.which("pi")),
-            "ChatCut": Path("/Applications/ChatCut.app").exists(), "ffmpeg": bool(shutil.which("ffmpeg"))}
-    note = {"Claude Code": "推荐", "Codex": "", "Cursor CLI": "用 Cursor 账号额度", "Pi": "开源,自带模型账号;看不到逐步过程", "ChatCut": "有标题栏、金句卡等动效包装", "ffmpeg": "免费,只做基础剪辑和字幕"}
+            "Remotion": remotion_ready, "ChatCut": Path("/Applications/ChatCut.app").exists(), "ffmpeg": bool(shutil.which("ffmpeg"))}
+    note = {"Claude Code": "推荐", "Codex": "", "Cursor CLI": "用 Cursor 账号额度", "Pi": "开源,自带模型账号;看不到逐步过程",
+            "Remotion": "开源动效包装:流光标题栏、弹簧金句卡、逐字高亮字幕与留存进度条",
+            "ChatCut": "有标题栏、金句卡等动效包装", "ffmpeg": "免费,只做基础静态剪辑和字幕"}
     return {k: [{"值": v, "已安装": have.get(v, True), "说明": note.get(v, "")} for v in opts] for k, opts in SETTINGS.items()}
 
 

@@ -1,0 +1,20 @@
+{
+  "name": "video-clip-sop-remotion-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vertical 9:16 short-video motion-graphics packaging engine for video-clip-sop",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts ShortVideoVertical"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "^4.0.286",
+    "@remotion/cli": "^4.0.286"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.2"
+  }
+}

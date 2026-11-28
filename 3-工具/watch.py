@@ -148,7 +148,17 @@ def take_lock(stage):
             os.close(fd)
             return True
         except FileExistsError:
-            if time.time() - LOCK.stat().st_mtime < 4 * 3600:
+            stale = time.time() - LOCK.stat().st_mtime >= 4 * 3600
+            if not stale:
+                try:
+                    m = __import__("re").search(r"pid=(\d+)", LOCK.read_text(errors="ignore"))
+                    if m:
+                        os.kill(int(m.group(1)), 0)
+                except ProcessLookupError:
+                    stale = True
+                except Exception:
+                    pass
+            if not stale:
                 return False
             LOCK.unlink(missing_ok=True)
     return False
@@ -178,7 +188,7 @@ def pre_transcribe(ids, st):
         try:
             with open(logf, "w") as lf:
                 rc = subprocess.run(["zsh", str(ROOT / "3-工具/脚本/transcribe.sh"), f"工作区/{sid}/转录文件", f"工作区/{sid}/复盘"],
-                                    cwd=ROOT, stdout=lf, stderr=subprocess.STDOUT, timeout=3 * 3600).returncode
+                                    cwd=ROOT, stdin=subprocess.DEVNULL, stdout=lf, stderr=subprocess.STDOUT, timeout=3 * 3600).returncode
         except subprocess.TimeoutExpired:
             rc = -1
         if rc != 0 or need_transcribe(sid):
@@ -194,7 +204,7 @@ def pre_transcribe(ids, st):
     return bad
 
 
-def run_once(dry, force=False):
+def run_once(dry, force=False, manual=False):
     """检查一次;做了一步并且成功返回 True(调用方会接着检查下一步)。"""
     c = db.conn()
     todo = db.pending(c)
@@ -239,7 +249,7 @@ def run_once(dry, force=False):
         return False
 
     cmd_tpl = db.CFG.get("驱动命令", "")
-    auto = db.CFG.get("自动执行", False)
+    auto = db.CFG.get("自动执行", False) or manual
     prompt = prompt_for(stage, ids)
     if dry or not auto or not cmd_tpl:
         why = "演练模式" if dry else ("配置里 自动执行=false" if not auto else "配置里没有驱动命令")
@@ -272,7 +282,7 @@ def run_once(dry, force=False):
     st["今日次数"][stage] = st["今日次数"].get(stage, 0) + 1
     try:
         with open(logf, "w") as lf:
-            rc = subprocess.run(args, cwd=ROOT, stdout=lf, stderr=subprocess.STDOUT, timeout=3 * 3600).returncode
+            rc = subprocess.run(args, cwd=ROOT, stdin=subprocess.DEVNULL, stdout=lf, stderr=subprocess.STDOUT, timeout=3 * 3600).returncode
         end = end_line(logf)
         kind = end[1:3] if end else ""
         ok = rc == 0 and kind in ("完成", "无事", "需人")
@@ -307,10 +317,10 @@ def run_once(dry, force=False):
         save_state(st)
 
 
-def chain(dry, force=False):
+def chain(dry, force=False, manual=False):
     """做完一步立刻看下一步,直到没活、要等人或失败(最多 MAX_CHAIN 步)。"""
     for n in range(MAX_CHAIN):
-        if not run_once(dry, force and n == 0):
+        if not run_once(dry, force and n == 0, manual=manual):
             return
         print(f"[{stamp()}] → 接着检查下一步")
 
@@ -320,9 +330,10 @@ def main():
     p.add_argument("--once", action="store_true")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--force", action="store_true", help="忽略'没变化/失败冷却/次数上限',立即触发(调试用)")
+    p.add_argument("--manual", action="store_true", help="工作台手动点击立即运行(不受 自动执行=false 限制)")
     a = p.parse_args()
     if a.once:
-        chain(a.dry_run, a.force)
+        chain(a.dry_run, a.force or a.manual, a.manual)
         return
     gap = int(db.CFG.get("监测间隔秒", 300))
     print(f"开始监测,每 {gap} 秒检查一次。Ctrl+C 停止。")

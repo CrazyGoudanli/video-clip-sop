@@ -3,581 +3,2790 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>视频剪辑 SOP 工作台</title>
+<title>即刻剪辑 · 视频 SOP 工作台</title>
 <style>
-:root{--bg:#0e1014;--side:#12151b;--card:#171b22;--card2:#1d222b;--line:#272c36;--text:#e8eaef;--dim:#8a91a0;--gold:#f5c518;--ok:#3ecf8e;--bad:#ff6b6b;--blue:#5aa9ff}
-*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,"PingFang SC","Helvetica Neue",sans-serif;display:flex}
-a{color:var(--blue);cursor:pointer}button{font:inherit}
-aside{width:230px;flex:none;overflow-y:auto;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 12px}
-aside h1{font-size:16px;margin:0 8px 22px}aside h1 b{color:var(--gold)}
-.nav{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;color:var(--dim);padding:9px 12px;border-radius:9px;cursor:pointer;text-align:left;font-size:14px}
-.nav:hover{background:#1a1e26}.nav.on{background:#20252f;color:var(--text)}
-.badge{margin-left:auto;min-width:20px;padding:0 6px;border-radius:10px;background:var(--gold);color:#000;font-size:12px;line-height:20px;text-align:center;font-weight:600}
-.badge.red{background:var(--bad);color:#fff}
-aside .foot{margin-top:auto;color:var(--dim);font-size:12px;padding:0 8px;word-break:break-all}
-.set{margin-bottom:10px}.set label{display:block;margin-bottom:4px}.set select{width:100%;background:#0b0d11;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px}
-.set .hint{font-size:11px;margin-top:3px}
-.live{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:var(--card);font-size:12px;line-height:1.55}
-.live .hd{display:flex;align-items:center;gap:7px;color:var(--text);font-size:13px;font-weight:600}
-.dot{width:9px;height:9px;border-radius:50%;flex:none;background:#59606e;display:inline-block}.dot.busy{background:var(--ok);box-shadow:0 0 0 0 #3ecf8e88;animation:pulse 1.6s infinite}
-.dot.off{background:#59606e}.dot.idle{background:var(--blue)}@keyframes pulse{70%{box-shadow:0 0 0 7px #3ecf8e00}100%{box-shadow:0 0 0 0 #3ecf8e00}}
-.live .st{margin-top:6px;color:var(--dim)}.live .st b{color:var(--text);font-weight:500}.live .ls{margin-top:3px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.auto{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
-.sw{position:relative;width:36px;height:20px;flex:none;border-radius:10px;background:#333a46;cursor:pointer;border:0;transition:background .15s}
-.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}.sw.on{background:var(--ok)}.sw.on::after{left:18px}
-main{flex:1;overflow:auto;padding:22px 26px 80px;min-width:0}
-.wrap{max-width:1500px;margin:0 auto}.wrap.wide{max-width:none}
-h2{font-size:20px;margin:0 0 4px}h3{font-size:15px;margin:0 0 10px}.sub{color:var(--dim);margin:0 0 16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
-.dim{color:var(--dim);font-size:13px}.grid{display:grid;gap:14px}
-.btn{border:1px solid var(--line);background:var(--card2);color:var(--text);padding:7px 14px;border-radius:9px;cursor:pointer;font-size:13px;white-space:nowrap}
-.btn:hover:not(:disabled){border-color:#3b4250}.btn:disabled{opacity:.4;cursor:not-allowed}
-.btn.pri{background:var(--gold);color:#111;border-color:var(--gold);font-weight:600}.btn.bad{color:var(--bad)}.btn.sm{padding:4px 10px;font-size:12px}.btn.xs{padding:2px 8px;font-size:11.5px;border-radius:7px}
-.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.pill{display:inline-block;padding:1px 9px;border-radius:20px;font-size:12px;background:#232833;color:var(--dim);white-space:nowrap}
-.pill.me{background:#3a3112;color:var(--gold)}.pill.ok{background:#123326;color:var(--ok)}.pill.bad,.pill.err{background:#3a1717;color:var(--bad)}.pill.ai,.pill.run,.pill.queue{background:#14263b;color:var(--blue)}.pill.re{background:#2c1f3d;color:#c59bff}
-.folders{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
-.folder{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px}
-.folder .ic{font-size:26px;line-height:1}.folder b{font-size:15px}.folder .cnt{color:var(--gold);font-weight:600}
-/* 顶部:等你处理 */
-.topbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-.topbar h2{margin:0;margin-right:6px}
-.inbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:14px}
-.inbox .lab{font-weight:600;font-size:13px;margin-right:4px;white-space:nowrap}
-.chip{display:inline-flex;gap:6px;align-items:center;max-width:300px;background:#20252f;border:1px solid var(--line);border-radius:20px;padding:3px 11px;font-size:12.5px;cursor:pointer}
-.chip:hover{border-color:var(--gold)}.chip.err{border-color:#5a2525;color:#ffb4b4}.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chip b{color:var(--gold);font-weight:600;flex:none}.chip.err b{color:var(--bad)}
-/* 看板 */
-.board{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;align-items:flex-start}
-.col{flex:1 0 210px;max-width:290px;background:var(--side);border:1px solid var(--line);border-radius:12px;padding:8px}
-.col.empty{flex:0 0 64px;padding:8px 4px;opacity:.75}
-.col h4{margin:2px 4px 8px;font-size:13px;display:flex;align-items:center;gap:5px;white-space:nowrap}
-.col h4 .who{font-size:11px;color:var(--dim);font-weight:400;margin-left:auto}
-.col.empty h4{flex-direction:column;gap:1px;align-items:center;white-space:normal;text-align:center;font-size:11.5px;line-height:1.3;margin:2px 0}
-.col.empty h4 .who{margin:0}
-.col.me h4 .nm{color:var(--gold)}
-.vc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-bottom:7px;cursor:pointer;position:relative;font-size:12.5px}
-.vc:hover{border-color:#3b4250}.vc.me{border-left:3px solid var(--gold)}.vc.err{border-color:#6b2a2a;border-left:3px solid var(--bad);background:#1e1517}
-.vc.run{border-left:3px solid var(--ok)}.vc.flash{animation:flash 2.4s}@keyframes flash{0%,40%{box-shadow:0 0 0 2px var(--gold)}100%{box-shadow:0 0 0 0 transparent}}
-.vc .tt{font-weight:600;font-size:13px;line-height:1.45;margin-bottom:5px;padding-right:20px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.vc .kind{font-size:11px;color:var(--dim);margin-bottom:3px}
-.vc .ck{position:absolute;right:8px;top:9px;width:16px;height:16px;accent-color:var(--gold)}
-.vc .row{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:4px}
-.vc .nx{margin-top:5px;color:var(--dim);font-size:11.5px;line-height:1.45}
-.vc .why{margin-top:5px;color:#ffb4b4;font-size:11.5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.vc .re{margin-top:5px;color:#c59bff;font-size:11.5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.vc .warn{margin-top:4px;color:#f0b35a;font-size:11.5px}
-.vc .btns{margin-top:7px;gap:5px}
-.plats{display:flex;gap:3px;flex-wrap:wrap}.pf{font-size:11px;padding:0 6px;border-radius:6px;background:#232833;color:var(--dim);line-height:18px;white-space:nowrap}
-.pf.ok{background:#123326;color:var(--ok)}.pf.err{background:#3a1717;color:var(--bad)}.pf.ai{background:#14263b;color:var(--blue)}.pf.me{background:#3a3112;color:var(--gold)}.pf.off{opacity:.45;text-decoration:line-through}
-.offzone{margin-top:8px}.offzone .list{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.offzone .vc{width:230px;opacity:.75}
-.empty{color:var(--dim);text-align:center;padding:14px 6px;font-size:13px}
-.bulk{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#1f242d;border:1px solid var(--gold);border-radius:12px;padding:10px 16px;display:none;gap:10px;align-items:center;z-index:20;box-shadow:0 8px 30px #0008}
-/* 抽屉 */
-#mask{position:fixed;inset:0;background:#0009;display:none;z-index:30}
-#drawer{position:fixed;top:0;right:0;bottom:0;width:min(780px,96vw);background:var(--bg);border-left:1px solid var(--line);z-index:31;transform:translateX(100%);transition:transform .2s;overflow:auto;padding:22px 26px 60px}
-#drawer.open{transform:none}
-.dh{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px}.dh h2{flex:1;font-size:18px}
-.next{background:var(--card);border:1px solid var(--gold);border-radius:14px;padding:16px;margin-bottom:16px}.next.ai{border-color:#2a4466}.next.err{border-color:var(--bad);background:#1e1517}
-.next .lead{font-weight:700;margin-bottom:10px;font-size:15px}
-.quote{border-left:3px solid #c59bff;background:#1d1828;padding:8px 12px;border-radius:0 9px 9px 0;margin:8px 0;font-size:13px;white-space:pre-wrap}
-.quote.req{border-color:var(--gold);background:#221e10}.quote.warn{border-color:#f0b35a;background:#231c10}
-video{width:100%;background:#000;border-radius:10px;max-height:430px}.v916{max-width:300px}
-.covers{display:flex;gap:12px;flex-wrap:wrap}.cov{text-align:center;cursor:pointer}.cov img{height:210px;border-radius:10px;border:3px solid transparent;display:block}
-.cov.sel img{border-color:var(--gold)}.cov .dim{margin-top:4px}.cov.small img{height:110px}
-label.f{display:block;font-size:13px;color:var(--dim);margin:12px 0 5px}
-input,textarea{width:100%;background:#0b0d11;border:1px solid var(--line);color:var(--text);border-radius:9px;padding:8px 11px;font:inherit}textarea{min-height:72px;resize:vertical}
-input:focus,textarea:focus{outline:none;border-color:var(--gold)}
-input[type=checkbox]{width:auto}
-.tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.tag{border:1px solid var(--line);background:#1a1e26;color:var(--dim);border-radius:16px;padding:2px 10px;font-size:12px;cursor:pointer;user-select:none}
-.tag.on{border-color:var(--gold);color:var(--gold);background:#2a2410}
-.drop{border:1.5px dashed #3b4250;border-radius:12px;padding:14px;text-align:center;color:var(--dim);font-size:13px;cursor:pointer;margin-top:8px}.drop.over{border-color:var(--gold);color:var(--gold)}
-.cand{display:flex;gap:8px;align-items:center;margin:4px 0;font-size:13px}.cand .txt{flex:1}
-details{margin-top:10px}summary{cursor:pointer;color:var(--dim);font-size:13px}
-.md{white-space:pre-wrap;font-size:13.5px;line-height:1.7;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;max-height:70vh;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--dim);font-weight:500;white-space:nowrap}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}.seg button{background:none;border:0;color:var(--dim);padding:4px 12px;cursor:pointer;font-size:12.5px}.seg button.on{background:#262c37;color:var(--text)}
-.plat-sec{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:12px;background:#12151b}
-.plat-sec h4{margin:0 0 4px;display:flex;align-items:center;gap:8px;font-size:14px}
-.bar{height:7px;border-radius:4px;background:#232833;overflow:hidden;min-width:60px}.bar i{display:block;height:100%;background:var(--gold)}
-#modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:50}
-#modal .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(480px,92vw)}
-#modal h3{font-size:17px}#modal .btns{justify-content:flex-end;margin-top:18px}
-#toast{position:fixed;right:22px;bottom:22px;max-width:440px;background:#1f242d;border:1px solid var(--line);padding:12px 16px;border-radius:12px;display:none;white-space:pre-wrap;z-index:60;font-size:13px}
-.help{background:#14202e;border:1px solid #23405e;border-radius:12px;padding:12px 14px;font-size:13px;color:#b9cde3;margin-bottom:16px}
+:root {
+  /* 四级清晰明度阶梯: 画布 -> 侧栏 -> 常规卡片 -> 悬浮控制台 */
+  --bg-canvas: #07080c;
+  --bg-sidebar: #0b0d13;
+  --bg-card: #131722;
+  --bg-card-hover: #181d2b;
+  --bg-dock: #191e2c;
+  --bg-elevated: #22283a;
+  --bg-input: #0d1018;
+
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-mid: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.2);
+
+  --text-primary: #f4f7fb;
+  --text-secondary: #9ca4b4;
+  --text-muted: #697284;
+
+  --accent-cyan: #38bdf8;
+  --accent-cyan-soft: rgba(56, 189, 248, 0.14);
+  --accent-emerald: #34d399;
+  --accent-emerald-soft: rgba(52, 211, 153, 0.14);
+  --accent-violet: #a78bfa;
+  --accent-violet-soft: rgba(167, 139, 250, 0.15);
+  --accent-amber: #fbbf24;
+  --accent-amber-soft: rgba(251, 191, 36, 0.14);
+  --accent-coral: #f87171;
+  --accent-coral-soft: rgba(248, 113, 113, 0.14);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+  --shadow-dock: inset 0 1px 0 rgba(255, 255, 255, 0.11), 0 24px 60px rgba(0, 0, 0, 0.58);
+  --shadow-float: 0 24px 56px rgba(0, 0, 0, 0.65);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+::selection { background: rgba(56, 189, 248, 0.28); color: #ffffff; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font: 14px/1.55 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  caret-color: var(--accent-cyan);
+}
+body { display: flex; overflow: hidden; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.13); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.24); }
+
+button, input, textarea { font: inherit; color: inherit; }
+a { color: var(--accent-cyan); text-decoration: none; cursor: pointer; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid rgba(56, 189, 248, 0.55); outline-offset: 2px; }
+
+.num { font-variant-numeric: tabular-nums; }
+.svg-ic { display: inline-flex; align-items: center; justify-content: center; flex: none; vertical-align: middle; }
+
+/* ================= 极简左侧栏 (零杂乱列表) ================= */
+aside {
+  width: 220px;
+  flex: none;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 12px;
+  transition: width 200ms var(--ease-out), padding 200ms var(--ease-out);
+  z-index: 10;
+}
+body.collapsed aside { width: 68px; padding: 18px 10px; }
+body.collapsed .hide-col { display: none !important; }
+body.collapsed .brand-row, body.collapsed .nav-btn, body.collapsed .space-pill, body.collapsed .engine-card { justify-content: center; padding-left: 0; padding-right: 0; }
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  margin-bottom: 18px;
+}
+.brand { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.brand-title { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; display: flex; align-items: center; gap: 6px; }
+.brand-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(56, 189, 248, 0.14);
+  color: #7dd3fc;
+}
+
+.icon-ghost {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 150ms, color 150ms;
+}
+.icon-ghost:hover { background: rgba(255, 255, 255, 0.07); color: var(--text-primary); }
+
+.space-pill {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  margin-bottom: 16px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: border-color 150ms, background 150ms;
+}
+.space-pill:hover { background: rgba(255, 255, 255, 0.07); border-color: var(--border-mid); }
+.space-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  color: #07080c;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.space-name { font-size: 13px; font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.nav-list { display: flex; flex-direction: column; gap: 4px; }
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 150ms, color 150ms;
+}
+.nav-btn:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-primary); }
+.nav-btn.on { background: #191e2c; color: #ffffff; font-weight: 600; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.nav-badge {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-cyan);
+  color: #07080c;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.nav-badge.err { background: var(--accent-coral); color: #07080c; }
+
+.side-foot { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border-subtle); }
+.engine-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 11px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: border-color 150ms, background 150ms;
+}
+.engine-card:hover { border-color: var(--border-mid); background: rgba(255, 255, 255, 0.06); }
+.engine-meta { flex: 1; min-width: 0; }
+.engine-title { font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
+.engine-sub { font-size: 11px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+
+.dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 7px; display: inline-block; background: var(--text-muted); }
+.dot.busy { background: var(--accent-emerald); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55); animation: pulse 1.8s infinite; }
+.dot.idle { background: var(--accent-cyan); }
+.dot.err { background: var(--accent-coral); }
+@keyframes pulse { 70% { box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); } 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); } }
+
+/* ================= 主舞台与顶栏 ================= */
+.stage-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  background:
+    radial-gradient(ellipse 64% 380px at 50% -30px, rgba(56, 189, 248, 0.11), rgba(99, 102, 241, 0.04) 50%, transparent 78%),
+    radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 100% 100%, 26px 26px;
+}
+
+.top-header {
+  height: 56px;
+  flex: none;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.top-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+.top-actions { display: flex; align-items: center; gap: 8px; }
+.top-pill {
+  height: 32px;
+  padding: 0 13px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: rgba(19, 23, 34, 0.85);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  transition: all 150ms;
+}
+.top-pill:hover { border-color: var(--border-mid); color: var(--text-primary); background: var(--bg-card-hover); }
+.top-pill.on { border-color: rgba(52, 211, 153, 0.35); color: #a7f3d0; background: rgba(52, 211, 153, 0.08); }
+
+main {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding: 12px 36px 96px;
+  min-width: 0;
+}
+.container { max-width: 1220px; margin: 0 auto; }
+
+/* ================= 通用按钮 ================= */
+.btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-mid);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 150ms, border-color 150ms, transform 120ms;
+}
+.btn:hover:not(:disabled) { background: #2a3147; border-color: var(--border-strong); }
+.btn:active:not(:disabled) { transform: scale(0.985); }
+.btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+.btn.pri {
+  background: #ffffff;
+  color: #07080c;
+  border-color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.12);
+}
+.btn.pri:hover:not(:disabled) { background: #e6f4ff; border-color: #e6f4ff; }
+
+.btn.pill-cta { border-radius: var(--radius-pill); padding: 0 18px; }
+.btn.bad { background: rgba(248, 113, 113, 0.12); border-color: rgba(248, 113, 113, 0.28); color: #fca5a5; }
+.btn.bad:hover:not(:disabled) { background: rgba(248, 113, 113, 0.2); border-color: rgba(248, 113, 113, 0.45); }
+.btn.sm { height: 31px; padding: 0 12px; font-size: 12.5px; border-radius: 8px; }
+.btn.xs { height: 27px; padding: 0 10px; font-size: 12px; border-radius: 7px; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ================= 第一层: 即梦同款中央悬浮操作舱 ================= */
+.hero-stage {
+  padding: 8px 0 6px;
+  text-align: center;
+}
+.hero-headline {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin: 0 0 14px;
+  color: #ffffff;
+}
+.how-steps {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 22px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.how-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--border-subtle);
+}
+.how-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.18);
+  color: #7dd3fc;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.how-arrow { color: var(--text-muted); font-size: 12px; }
+
+.creation-dock {
+  max-width: 880px;
+  margin: 0 auto;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, #1b2030 0%, #141824 100%);
+  border: 1px solid var(--border-mid);
+  box-shadow: var(--shadow-dock);
+  text-align: left;
+  overflow: hidden;
+  transition: border-color 180ms;
+}
+.creation-dock:hover { border-color: rgba(255, 255, 255, 0.18); }
+.creation-dock.drag-over { border-color: var(--accent-cyan); background: linear-gradient(180deg, #1d283d 0%, #151c2c 100%); }
+
+.dock-main {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 24px 26px 20px;
+}
+.dock-upload-tile {
+  width: 66px;
+  height: 82px;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #262d42, #1b2030);
+  border: 1px dashed rgba(255, 255, 255, 0.24);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  transform: rotate(-4deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: #cbd5e1;
+  cursor: pointer;
+  flex: none;
+  transition: transform 200ms var(--ease-out), border-color 160ms, color 160ms;
+}
+.dock-upload-tile:hover {
+  transform: rotate(0deg) scale(1.04);
+  border-color: var(--accent-cyan);
+  color: #ffffff;
+}
+.dock-upload-tile span { font-size: 10.5px; font-weight: 500; }
+
+.dock-copy { flex: 1; min-width: 0; }
+.dock-title {
+  font-size: 16.5px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 5px;
+}
+.dock-desc {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+.dock-desc b { color: #7dd3fc; font-weight: 600; }
+
+/* 操作舱内已选视频可视化卡片区 */
+.dock-selected-wrap {
+  padding: 20px 24px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dock-sel-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dock-sel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #ffffff;
+}
+.dock-sel-grid {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.sel-vid-card {
+  width: 164px;
+  flex: 0 0 164px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 7px 7px 9px;
+  border-radius: 13px;
+  background: rgba(8, 10, 16, 0.62);
+  border: 1px solid rgba(56, 189, 248, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  position: relative;
+  transition: transform 160ms var(--ease-out), border-color 160ms, background 160ms;
+}
+.sel-vid-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(56, 189, 248, 0.68);
+  background: rgba(13, 18, 29, 0.8);
+}
+.sel-vid-thumb {
+  width: 100%;
+  height: 86px;
+  border-radius: 8px;
+  background: #0a0d14;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+  flex: none;
+}
+.sel-vid-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 200ms var(--ease-out);
+}
+.sel-vid-card:hover .sel-vid-thumb img { transform: scale(1.05); }
+.sel-play-btn {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(7, 8, 12, 0.68);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 150ms, background 150ms;
+}
+.sel-vid-card:hover .sel-play-btn { transform: scale(1.08); background: rgba(56, 189, 248, 0.9); color: #07080c; border-color: transparent; }
+.sel-rm-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(7, 8, 12, 0.72);
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 140ms, color 140ms;
+}
+.sel-rm-btn:hover { background: rgba(248, 113, 113, 0.9); color: #07080c; }
+.sel-dur-tag {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(7, 8, 12, 0.82);
+  color: #f4f7fb;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.sel-vid-info { padding: 0 2px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sel-vid-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sel-vid-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.sel-add-tile {
+  width: 112px;
+  flex: 0 0 112px;
+  min-height: 138px;
+  border-radius: 13px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 150ms;
+}
+.sel-add-tile:hover { border-color: var(--accent-cyan); color: #ffffff; background: rgba(56, 189, 248, 0.08); }
+
+/* AI 实时处理动态控制台与流光动画 */
+.ai-run-panel {
+  padding: 20px 24px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: radial-gradient(80% 120% at 15% 0%, rgba(56, 189, 248, 0.12), transparent 65%);
+}
+.ai-run-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ai-orb {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(56, 189, 248, 0.08);
+}
+.ai-orb::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  padding: 2px;
+  background: conic-gradient(from 0deg, #38bdf8, #818cf8, #34d399, transparent 70%, #38bdf8);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: orbSpin 1.35s linear infinite;
+}
+.ai-orb-core {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #38bdf8, #a78bfa);
+  transform: rotate(45deg);
+  animation: orbBeat 1.5s ease-in-out infinite;
+}
+@keyframes orbSpin { to { transform: rotate(360deg); } }
+@keyframes orbBeat { 0%, 100% { transform: rotate(45deg) scale(0.88); opacity: 0.85; } 50% { transform: rotate(45deg) scale(1.12); opacity: 1; } }
+
+.ai-run-copy { flex: 1; min-width: 0; }
+.ai-run-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ai-run-title { font-size: 15.5px; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 8px; }
+.ai-run-timer {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7dd3fc;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.14);
+  font-variant-numeric: tabular-nums;
+}
+.ai-run-log {
+  margin-top: 5px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ai-shimmer-track {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+.ai-shimmer-bar {
+  position: absolute;
+  inset: 0;
+  width: 42%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #38bdf8 35%, #818cf8 70%, #34d399 90%, transparent);
+  animation: shimmerSlide 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes shimmerSlide {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(260%); }
+}
+.ai-run-steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ai-step-tag {
+  font-size: 11.5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ai-step-tag.now {
+  background: rgba(56, 189, 248, 0.15);
+  color: #e0f2fe;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  font-weight: 500;
+}
+.mcard.running-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(52, 211, 153, 0.42);
+  background: linear-gradient(135deg, rgba(16, 42, 42, 0.45), var(--bg-card) 65%);
+}
+.mcard.running-card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2.5px;
+  background: linear-gradient(90deg, transparent, #34d399, #38bdf8, transparent);
+  background-size: 200% 100%;
+  animation: cardScan 1.8s linear infinite;
+}
+@keyframes cardScan { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 10.5px;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.dock-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 22px;
+  background: rgba(7, 8, 12, 0.36);
+  border-top: 1px solid var(--border-subtle);
+}
+.dock-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dock-chip {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 140ms;
+}
+.dock-chip:hover { background: rgba(255, 255, 255, 0.09); color: var(--text-primary); border-color: var(--border-subtle); }
+.dock-chip.static { cursor: default; }
+.dock-chip.static:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border-color: transparent; }
+
+/* ================= 第二层: 即梦风格 4 大人工关卡视觉卡 ================= */
+.studio-sec-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 30px 0 12px;
+}
+.studio-sec-hd h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+.studio-sec-hd span { font-size: 12.5px; color: var(--text-secondary); }
+
+.studio-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 1120px) { .studio-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) {
+  aside { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); }
+  .studio-grid { grid-template-columns: 1fr; }
+  main { padding: 12px 16px 88px; }
+  .top-header { padding: 0 16px; }
+  .dock-main { flex-direction: column; align-items: flex-start; }
+}
+
+.studio-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+  overflow: hidden;
+  transition: transform 180ms var(--ease-out), border-color 180ms, background 180ms;
+}
+.studio-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  background: var(--bg-card-hover);
+}
+.studio-card.active-gate {
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+.studio-card.c-cyan { background: linear-gradient(135deg, rgba(14, 42, 66, 0.65) 0%, #131722 72%); }
+.studio-card.c-violet { background: linear-gradient(135deg, rgba(44, 29, 74, 0.65) 0%, #131722 72%); }
+.studio-card.c-amber { background: linear-gradient(135deg, rgba(66, 42, 18, 0.6) 0%, #131722 72%); }
+.studio-card.c-emerald { background: linear-gradient(135deg, rgba(16, 54, 46, 0.65) 0%, #131722 72%); }
+
+.studio-art {
+  width: 62px;
+  height: 62px;
+  border-radius: 11px;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.studio-info { flex: 1; min-width: 0; }
+.studio-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px; }
+.studio-name { font-size: 15px; font-weight: 600; color: #ffffff; }
+.studio-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #07080c;
+  font-variant-numeric: tabular-nums;
+}
+.studio-badge.zero {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.studio-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ================= 第三层: 底部分类导航 + 搜索框 + 极简图文卡片 ================= */
+.feed-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 30px 0 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.feed-tabs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.feed-tab {
+  height: 34px;
+  padding: 0 15px;
+  border-radius: var(--radius-pill);
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 150ms;
+}
+.feed-tab:hover:not(.on) { color: var(--text-primary); background: rgba(255, 255, 255, 0.04); }
+.feed-tab.on {
+  background: radial-gradient(120% 150% at 20% 20%, #fff6ec 0%, #f4f8ff 55%, #dff2fe 100%);
+  color: #07080c;
+  font-weight: 600;
+  box-shadow: 0 2px 14px rgba(56, 189, 248, 0.18);
+}
+.feed-tab .cnt {
+  font-size: 11px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(7, 8, 12, 0.12);
+  font-variant-numeric: tabular-nums;
+}
+.feed-tab:not(.on) .cnt { background: rgba(255, 255, 255, 0.07); color: var(--text-secondary); }
+
+.search-box {
+  position: relative;
+  width: 230px;
+}
+.search-box input {
+  width: 100%;
+  height: 34px;
+  padding: 0 12px 0 34px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 12.5px;
+}
+.search-box input:focus { outline: none; border-color: rgba(56, 189, 248, 0.45); }
+.search-box .s-ic {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* 双列宽敞图文任务卡 (大幅减字、突出主动作) */
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 920px) { .media-grid { grid-template-columns: 1fr; } }
+
+.mcard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 18px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  min-width: 0;
+  transition: transform 160ms var(--ease-out), border-color 160ms, background 160ms;
+}
+.mcard:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-mid);
+  transform: translateY(-1px);
+}
+.mcard.me { border-color: rgba(56, 189, 248, 0.24); }
+.mcard.me:hover { border-color: rgba(56, 189, 248, 0.48); }
+.mcard.err { border-color: rgba(248, 113, 113, 0.35); background: rgba(34, 18, 23, 0.72); }
+.mcard.flash { animation: cardFlash 2s var(--ease-out); }
+@keyframes cardFlash { 0%, 35% { border-color: var(--accent-cyan); background: rgba(56, 189, 248, 0.12); } 100% { border-color: var(--border-subtle); } }
+
+.mthumb {
+  width: 62px;
+  height: 82px;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #1e2538, #10131d);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  flex: none;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+.mthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mthumb-dur {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(7, 8, 12, 0.78);
+  color: #e2e8f0;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.mbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.mtop { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.mtitle {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.42;
+  color: #ffffff;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.msub {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mact { flex: none; display: flex; align-items: center; gap: 8px; }
+
+/* 四阶总览看板 (仅在切到「全流程总览」时展示) */
+.macro-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 1120px) { .macro-board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) { .macro-board { grid-template-columns: 1fr; } }
+
+.phase-col {
+  background: rgba(17, 20, 30, 0.75);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.phase-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.mini-card {
+  padding: 12px 13px;
+  border-radius: 11px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  min-width: 0;
+  transition: border-color 150ms, background 150ms;
+}
+.mini-card:hover { border-color: var(--border-mid); background: var(--bg-card-hover); }
+.mini-card.me { border-color: rgba(56, 189, 248, 0.28); }
+.mini-card .mt {
+  font-size: 13.5px;
+  font-weight: 500;
+  margin-top: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.pill.me { background: var(--accent-cyan-soft); color: #7dd3fc; }
+.pill.ok, .pill.run { background: var(--accent-emerald-soft); color: #6ee7b7; }
+.pill.re { background: var(--accent-violet-soft); color: #c4b5fd; }
+.pill.err, .pill.bad { background: var(--accent-coral-soft); color: #fca5a5; }
+.pill.ai { background: rgba(129, 140, 248, 0.15); color: #a5b4fc; }
+
+.chk-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.03);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #07080c;
+  cursor: pointer;
+  padding: 0;
+  transition: all 140ms;
+}
+.chk-btn:hover { border-color: var(--accent-cyan); }
+.chk-btn.on { background: var(--accent-cyan); border-color: var(--accent-cyan); }
+
+/* ================= 二级页面通用样式 ================= */
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 12px 0 24px;
+  flex-wrap: wrap;
+}
+.page-head h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 4px; }
+.page-head p { margin: 0; color: var(--text-secondary); font-size: 13.5px; }
+
+.surface-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+.surface-card h3 { font-size: 15.5px; font-weight: 600; margin: 0 0 12px; }
+.dim { color: var(--text-secondary); font-size: 13px; }
+
+.asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.asset-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 160ms, background 160ms;
+}
+.asset-card:hover { border-color: var(--border-mid); background: var(--bg-card-hover); }
+.asset-ic {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: var(--accent-cyan-soft);
+  color: #7dd3fc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.asset-head { display: flex; align-items: baseline; justify-content: space-between; }
+.asset-head b { font-size: 15px; }
+.asset-cnt { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 11px 10px; border-bottom: 1px solid var(--border-subtle); text-align: left; vertical-align: middle; }
+th { color: var(--text-secondary); font-weight: 500; font-size: 12px; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+
+.seg { display: inline-flex; padding: 3px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; gap: 2px; }
+.seg button { border: 0; background: transparent; color: var(--text-secondary); padding: 5px 13px; border-radius: 7px; font-size: 12.5px; font-weight: 500; cursor: pointer; }
+.seg button.on { background: var(--bg-elevated); color: #ffffff; }
+
+.bar { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #38bdf8, #818cf8); }
+
+.info-banner {
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: var(--radius-md);
+  padding: 13px 16px;
+  font-size: 13px;
+  color: #bae6fd;
+  margin-bottom: 16px;
+}
+
+.empty-box {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+  background: rgba(19, 23, 34, 0.6);
+  border: 1px dashed var(--border-mid);
+  border-radius: var(--radius-lg);
+}
+
+/* ================= 悬浮批量条、右侧抽屉与弹窗 ================= */
+.bulk {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: rgba(25, 30, 44, 0.96);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: var(--radius-pill);
+  padding: 8px 12px 8px 18px;
+  display: none;
+  gap: 10px;
+  align-items: center;
+  z-index: 25;
+  box-shadow: var(--shadow-float);
+}
+
+#mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 10, 0.72);
+  backdrop-filter: blur(5px);
+  display: none;
+  z-index: 30;
+}
+#drawer {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: min(720px, calc(100vw - 24px));
+  background: #10131d;
+  border: 1px solid var(--border-mid);
+  border-radius: 20px;
+  z-index: 31;
+  transform: translateX(calc(100% + 24px));
+  transition: transform 220ms var(--ease-out);
+  overflow-y: auto;
+  padding: 24px 28px 64px;
+  box-shadow: var(--shadow-float);
+}
+#drawer.open { transform: none; }
+
+.dh {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 18px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.dh h2 { flex: 1; font-size: 18px; font-weight: 600; margin: 0; line-height: 1.4; }
+
+.task-panel {
+  background: #171b29;
+  border: 1px solid var(--border-subtle);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.task-panel.me { border-color: rgba(56, 189, 248, 0.34); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+.task-panel.err { border-color: rgba(248, 113, 113, 0.36); background: rgba(36, 18, 24, 0.75); }
+.task-lead { font-weight: 600; font-size: 15.5px; margin-bottom: 10px; color: #ffffff; display: flex; align-items: center; gap: 8px; }
+
+.callout {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  padding: 11px 14px;
+  border-radius: 10px;
+  margin: 10px 0;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+.callout.re { background: rgba(167, 139, 250, 0.09); border-color: rgba(167, 139, 250, 0.26); color: #ddd6fe; }
+.callout.warn { background: rgba(251, 191, 36, 0.09); border-color: rgba(251, 191, 36, 0.26); color: #fde68a; }
+
+video { width: 100%; background: #000; border-radius: 12px; max-height: 420px; border: 1px solid var(--border-subtle); }
+.v916 { max-width: 280px; }
+
+.covers { display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 12px; margin-top: 12px; }
+.cov {
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 150ms;
+}
+.cov:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+.cov.sel { border-color: var(--accent-cyan); background: rgba(56, 189, 248, 0.09); }
+.cov img { width: 100%; height: 196px; object-fit: cover; border-radius: 8px; display: block; }
+.cov.small img { height: 116px; }
+.cov .dim { margin-top: 6px; font-size: 12px; }
+
+label.f { display: block; font-size: 12.5px; font-weight: 500; color: var(--text-secondary); margin: 14px 0 6px; }
+input[type="text"], input:not([type]), textarea {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 13.5px;
+}
+textarea { min-height: 74px; resize: vertical; }
+input:focus, textarea:focus { outline: none; border-color: rgba(56, 189, 248, 0.5); }
+
+.tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.tag {
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  padding: 3px 11px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.tag.on { border-color: rgba(56, 189, 248, 0.45); color: #7dd3fc; background: var(--accent-cyan-soft); }
+
+.drop {
+  border: 1.5px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+.drop:hover, .drop.over { border-color: var(--accent-cyan); color: #7dd3fc; background: var(--accent-cyan-soft); }
+
+.cand { display: flex; gap: 8px; align-items: center; padding: 7px 9px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); margin: 5px 0; font-size: 13px; }
+.cand .txt { flex: 1; }
+.plat-sec { border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: 14px; }
+.plat-sec h4 { margin: 0 0 6px; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.plats { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.pf { font-size: 11px; padding: 1px 7px; border-radius: 5px; background: rgba(255, 255, 255, 0.06); color: var(--text-secondary); }
+.pf.ok { background: var(--accent-emerald-soft); color: #6ee7b7; }
+.pf.me { background: var(--accent-cyan-soft); color: #7dd3fc; }
+.pf.ai { background: rgba(129, 140, 248, 0.15); color: #a5b4fc; }
+.pf.err { background: var(--accent-coral-soft); color: #fca5a5; }
+
+details { margin-top: 12px; }
+summary { cursor: pointer; color: var(--text-secondary); font-size: 13px; font-weight: 500; padding: 4px 0; }
+.md { white-space: pre-wrap; font-size: 13.5px; line-height: 1.7; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px; max-height: 68vh; overflow: auto; }
+
+.sw { position: relative; width: 38px; height: 21px; flex: none; border-radius: 999px; background: rgba(255, 255, 255, 0.15); cursor: pointer; border: 0; transition: background 160ms; }
+.sw::after { content: ""; position: absolute; top: 2.5px; left: 2.5px; width: 16px; height: 16px; border-radius: 50%; background: #ffffff; transition: transform 160ms var(--ease-out); }
+.sw.on { background: var(--accent-emerald); }
+.sw.on.warn-sw { background: var(--accent-coral); }
+.sw.on::after { transform: translateX(17px); }
+
+.opt-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.opt-card { padding: 12px 14px; border-radius: 11px; border: 1px solid var(--border-subtle); background: var(--bg-input); cursor: pointer; text-align: left; }
+.opt-card.on { border-color: rgba(56, 189, 248, 0.48); background: rgba(56, 189, 248, 0.09); }
+.opt-card b { font-size: 13.5px; display: flex; align-items: center; justify-content: space-between; }
+
+#modal { position: fixed; inset: 0; background: rgba(4, 6, 10, 0.74); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 50; }
+#modal .box { background: #151926; border: 1px solid var(--border-mid); border-radius: 18px; padding: 24px; width: min(460px, 92vw); box-shadow: var(--shadow-float); }
+#modal h3 { font-size: 17px; margin: 0 0 10px; }
+#modal .btns { justify-content: flex-end; margin-top: 20px; }
+
+#toast { position: fixed; right: 24px; bottom: 24px; max-width: 420px; background: rgba(22, 26, 39, 0.96); backdrop-filter: blur(10px); border: 1px solid var(--border-mid); padding: 12px 16px; border-radius: 12px; display: none; white-space: pre-wrap; z-index: 60; font-size: 13px; box-shadow: var(--shadow-float); }
 </style>
 </head>
 <body>
 <aside>
-  <h1>视频剪辑 SOP <b>工作台</b></h1>
-  <button class="nav" data-p="board">🧭 工作台<span class="badge" id="b-board" style="display:none"></span></button>
-  <button class="nav" data-p="sources">🎙 录像与复盘</button>
-  <button class="nav" data-p="data">📊 数据</button>
-  <button class="nav" data-p="prefs">🧠 我的偏好</button>
-  <button class="nav" data-p="folders">📁 文件夹</button>
-  <div class="foot"><div id="live"></div><div id="auto"></div><div id="gates"></div><div id="settings"></div><div id="proj" style="margin-top:12px"></div><button class="btn sm" style="margin-top:8px" onclick="load(true)">刷新</button></div>
+  <div class="brand-row">
+    <div class="brand" onclick="go('board')">
+      <div id="brand-mark"></div>
+      <div class="brand-title hide-col">即刻剪辑 <span class="brand-tag">SOP</span></div>
+    </div>
+    <button class="icon-ghost" title="收起/展开侧边栏" onclick="document.body.classList.toggle('collapsed')" id="btn-collapse"></button>
+  </div>
+
+  <div class="space-pill" onclick="openFolder('待加工')" title="打开待加工文件夹放入录像">
+    <div class="space-avatar">S</div>
+    <div class="space-name hide-col" id="space-label">本地工作空间</div>
+    <span class="hide-col" id="ic-space-plus" style="color:var(--text-secondary)"></span>
+  </div>
+
+  <nav class="nav-list" id="nav-list"></nav>
+
+  <div class="side-foot">
+    <div class="engine-card" onclick="openSettings()" title="配置 AI 驱动引擎、剪辑工具与代审规则">
+      <span class="dot idle" id="side-dot"></span>
+      <div class="engine-meta hide-col">
+        <div class="engine-title" id="side-engine-title">AI 待命</div>
+        <div class="engine-sub" id="side-engine-sub">点击打开引擎设置</div>
+      </div>
+      <span class="hide-col" id="ic-side-gear" style="color:var(--text-secondary)"></span>
+    </div>
+  </div>
 </aside>
-<main><div class="wrap" id="main"><div class="empty">加载中…</div></div></main>
+
+<div class="stage-shell">
+  <header class="top-header">
+    <div class="top-mode-badge" id="top-crumb"></div>
+    <div class="top-actions" id="top-actions"></div>
+  </header>
+  <main><div class="container" id="main"><div class="empty-box">正在加载工作台…</div></div></main>
+</div>
+
 <div id="mask" onclick="closeDrawer()"></div>
 <div id="drawer"></div>
 <div class="bulk" id="bulk"></div>
 <div id="modal"><div class="box" id="mbox"></div></div>
 <div id="toast"></div>
+
 <script>
-const PAGES=["board","sources","data","prefs","folders"];
-const hashPage=()=>{const h=location.hash.slice(1);return PAGES.includes(h)?h:"board"};
-let S=null,page=hashPage(),openId=null,openKind=null,picked=new Set(),coverSel={},dirty={},flashId=null,tagSel={},dataTier="72h",dataPlat="",showAllTodo=false,pubSel={};
-const $=s=>document.querySelector(s);
-const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const file=p=>"/file?path="+encodeURIComponent(p);
-const hm=t=>(t||"").slice(5,16).replace("T"," ");
-const fmt=(v,pct)=>v==null?"–":pct?(v*100).toFixed(1)+"%":v>=10000?(v/10000).toFixed(2)+"万":Math.round(v);
-const dur=s=>s<60?s+" 秒":s<3600?Math.floor(s/60)+" 分钟":Math.floor(s/3600)+" 小时 "+Math.floor(s%3600/60)+" 分";
-function toast(t,ok=true){const e=$("#toast");e.textContent=t;e.style.borderColor=ok?"var(--ok)":"var(--bad)";e.style.display="block";clearTimeout(e._t);e._t=setTimeout(()=>e.style.display="none",ok?2600:7000)}
-function modal(title,body,okText,onOk,danger){$("#mbox").innerHTML=`<h3>${esc(title)}</h3><div class="dim" style="font-size:14px;line-height:1.8">${body}</div><div class="btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn ${danger?"bad":"pri"}" id="mok">${esc(okText)}</button></div>`;$("#modal").style.display="flex";$("#mok").onclick=()=>{closeModal();onOk()}}
-function closeModal(){$("#modal").style.display="none"}
-async function load(manual){try{const r=await fetch("/api/state");S=await r.json();if(S.错误)throw new Error(S.错误);render();if(openId)renderDrawer();if(manual)toast("已刷新")}catch(e){$("#main").innerHTML=`<div class="card">读取失败:${esc(e.message)}</div>`}}
-async function post(body){try{const r=await fetch("/api/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});return await r.json()}catch(e){return {成功:false,错误:"连不上工作台服务"}}}
-async function act(body,msg,noReload){const j=await post(body);if(j.成功)toast("✅ "+(msg||j.输出||"已完成"));else toast("❌ "+(j.输出||j.错误||"失败"),false);if(!noReload&&!["打开","打开平台"].includes(body.动作))await load();return j.成功}
-const openFolder=k=>act({动作:"打开",文件夹:k},"已在访达打开");
-const reveal=p=>act({动作:"打开",路径:p},"已在访达打开");
-const openPlat=(plat,which)=>act({动作:"打开平台",平台:plat,页面:which});
+/* ================= 定制线性图标与工坊视觉插画 (零原生 Emoji) ================= */
+const SVG_PATHS = {
+  logo: `<svg width="26" height="26" viewBox="0 0 28 28" fill="none"><defs><linearGradient id="lg1" x1="2" y1="2" x2="26" y2="26" gradientUnits="userSpaceOnUse"><stop stop-color="#38BDF8"/><stop offset="0.52" stop-color="#60A5FA"/><stop offset="1" stop-color="#818CF8"/></linearGradient><linearGradient id="lg2" x1="8" y1="4" x2="24" y2="22" gradientUnits="userSpaceOnUse"><stop stop-color="#E0F2FE"/><stop offset="1" stop-color="#38BDF8" stop-opacity="0.35"/></linearGradient></defs><path d="M14 2.5L24.5 8.5V19.5L14 25.5L3.5 19.5V8.5L14 2.5Z" fill="url(#lg1)" fill-opacity="0.2" stroke="url(#lg1)" stroke-width="1.6"/><path d="M14 6.5L21 14L14 21.5L7 14L14 6.5Z" fill="url(#lg2)"/><circle cx="14" cy="14" r="2.2" fill="#07080C"/></svg>`,
+  sidebar: `<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9 4.5v15"/>`,
+  spark: `<path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3Z"/>`,
+  film: `<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7 4v16M17 4v16M3 9h4M17 9h4M3 15h4M17 15h4"/>`,
+  chart: `<path d="M4 19.5h16"/><path d="M7.5 16v-5.5M12 16V6M16.5 16v-8"/>`,
+  sliders: `<path d="M4 7h9M17 7h3M14 7a2 2 0 1 0 3 0 2 2 0 0 0-3 0ZM4 17h3M11 17h9M7 17a2 2 0 1 0 3 0 2 2 0 0 0-3 0Z"/>`,
+  folder: `<path d="M3.5 7.5A2 2 0 0 1 5.5 5.5h4l2 2.2h7a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V7.5Z"/>`,
+  settings: `<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.08a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>`,
+  plus: `<path d="M12 5v14M5 12h14"/>`,
+  refresh: `<path d="M20 11A8 8 0 0 0 5.3 7.3L4 9M4 5v4h4"/><path d="M4 13a8 8 0 0 0 14.7 3.7L20 15m0 4v-4h-4"/>`,
+  inbox: `<path d="M4 13h4l1.5 2.5h5L16 13h4"/><path d="M5.4 5.5h13.2a2 2 0 0 1 1.9 1.4L22 13v5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5l1.5-6.1a2 2 0 0 1 1.9-1.4Z"/>`,
+  scissors: `<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/>`,
+  play: `<polygon points="8 5 19 12 8 19 8 5"/>`,
+  image: `<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M20.5 15.5l-4.5-4.5L7 19.5"/>`,
+  clock: `<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>`,
+  check: `<path d="M5 12.5l4.5 4.5L19 7.5"/>`,
+  x: `<path d="M6 6l12 12M18 6L6 18"/>`,
+  doc: `<path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-10l-5-5Z"/><path d="M14 3.5v5h5M9 13h6M9 17h4"/>`,
+  upload: `<path d="M12 16V5M7.5 9.5L12 5l4.5 4.5"/><path d="M4 18.5h16"/>`,
+  ext: `<path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M11 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>`,
+  search: `<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.2 4.2"/>`,
+  alert: `<path d="M12 9v4M12 16.5h.01"/><path d="M10.3 3.9L2.6 17.2a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>`
+};
 
-/* ================= 把录像、片段、各平台发布排进 12 列 ================= */
-const COLS=[["inbox","📥","收件","ai"],["sort","🗂","整理","ai"],["recap","🎧","速记复盘","ai"],["pick","👤","挑片段","me"],["cut","✂️","剪辑","ai"],["review","👤","看成片","me"],
-  ["copy","✍️","写文案","ai"],["cover","🎨","做封面","ai"],["coverpick","👤","选封面","me"],["auth","👤","确认发布","me"],["pub","⏰","定时发布","ai"],["data","📊","数据复盘","ai"]];
-const CI=Object.fromEntries(COLS.map((c,i)=>[c[0],i]));
-const GATE={pick:"挑选",review:"看片",coverpick:"选封面",auth:"确认发布"};
-const ME_DO={pick:"挑一下要不要剪",review:"看成片,通过或打回",coverpick:"选一张封面",auth:"确认文案和封面,授权定时发布"};
-const AB={抖音:"抖",视频号:"视",小红书:"红",B站:"B"};
-const PIC={草稿:"✎",待发布:"⏳",已定时:"⏰",已发布:"✅",需人工:"⚠️",已废弃:"✕",已撤回:"↩"};
-const gateOn=col=>GATE[col]&&(S.配置.AI代审||{})[GATE[col]];
-const pubsOf=cid=>S.发布.filter(p=>p.clip_id===cid).sort((a,b)=>(S.配置.发布平台||[]).indexOf(a.平台)-(S.配置.发布平台||[]).indexOf(b.平台));
-const activePubs=ps=>ps.filter(p=>!["已废弃","已撤回"].includes(p.状态));
-function pubCol(p,k){
-  if(p.状态==="需人工"){const b=p.之前;return b==="待发布"||b==="已定时"?"pub":b==="已发布"?"data":"auth"}
-  if(p.状态==="草稿"){if(!p.封面竖文件)return (k.封面候选||[]).length?"coverpick":"cover";if(!p.封面横文件)return "cover";return "auth"}
-  if(p.状态==="待发布"||p.状态==="已定时")return "pub";
-  if(p.状态==="已发布")return "data";return null}
-function clipCol(k,ps){
-  const b=k.之前;
-  if(k.状态==="候选")return "pick";if(k.状态==="放弃")return "off";
-  if(k.状态==="待剪"||k.状态==="剪辑中")return "cut";if(k.状态==="已剪辑")return "review";
-  if(k.状态==="需人工")return b==="候选"?"pick":b==="已剪辑"?"review":"cut";
-  const act=activePubs(ps);
-  if(ps.length&&!act.length)return "off";
-  const plats=S.配置.发布平台||[];
-  if(!act.length||plats.some(pl=>!ps.some(p=>p.平台===pl)))return "copy";
-  return act.map(p=>pubCol(p,k)).filter(Boolean).sort((a,b)=>CI[a]-CI[b])[0]||"data"}
-function running(ids){return !!(L&&L.在干活&&(L.对象||[]).some(o=>ids.includes(o)))}
-function lastFail(objs){for(const o of objs){const r=(o.监测||{}).最近结果;if(r&&["失败","卡权限"].includes(r.结果))return r}return null}
-function coolOf(objs){for(const o of objs){const c=(o.监测||{}).冷却;if(c)return c}return null}
-function items(){
-  const out=[];
-  for(const f of S.收件||[]){const col=f.状态==="整理中"?"sort":"inbox";
-    out.push({type:"file",id:"file:"+f.文件,ids:[f.文件],title:f.文件,col,f,
-      state:col==="sort"?"run":f.状态==="还在写入"?"wait":"queue",
-      label:col==="sort"?"整理中":f.状态==="还在写入"?"还在写入":"排队整理"})}
-  for(const s of S.素材){const n=S.切片.filter(k=>k.source_id===s.source_id).length;let col;
-    if(s.状态==="待整理")col="sort";else if(s.状态==="已整理")col="recap";
-    else if(s.状态==="需人工")col=s.之前==="待整理"?"sort":"recap";
-    else if(s.状态==="已复盘"&&!n)col="recap";else continue;
-    const err=s.状态==="需人工",run=running([s.source_id]);
-    out.push({type:"source",id:s.source_id,ids:[s.source_id],title:s.标题||s.source_id,col,s,objs:[s],
-      state:err?"err":run?"run":s.状态==="已复盘"?"done":"queue",
-      label:err?"出错了":run?(col==="sort"?"整理中":"转写复盘中"):s.状态==="已复盘"?"没挑出可剪的片段":col==="sort"?"排队整理":"排队转写复盘"})}
-  for(const k of S.切片){const ps=pubsOf(k.clip_id),col=clipCol(k,ps),ids=[k.clip_id,...ps.map(p=>p.publish_id)];
-    const objs=[k,...ps],errP=ps.filter(p=>p.状态==="需人工"),err=k.状态==="需人工"||errP.length>0,run=running(ids);
-    const me=COLS[CI[col]]&&COLS[CI[col]][3]==="me"&&!gateOn(col);
+const STUDIO_ART = {
+  pick: `<svg width="62" height="62" viewBox="0 0 62 62" fill="none"><rect width="62" height="62" fill="#0B1E33"/><circle cx="48" cy="14" r="24" fill="#38BDF8" fill-opacity="0.22"/><rect x="10" y="25" width="5" height="12" rx="2.5" fill="#7DD3FC"/><rect x="19" y="16" width="5" height="30" rx="2.5" fill="#38BDF8"/><rect x="28" y="21" width="5" height="20" rx="2.5" fill="#E0F2FE"/><rect x="37" y="13" width="5" height="36" rx="2.5" fill="#38BDF8"/><rect x="46" y="23" width="5" height="16" rx="2.5" fill="#7DD3FC" fill-opacity="0.6"/></svg>`,
+  review: `<svg width="62" height="62" viewBox="0 0 62 62" fill="none"><rect width="62" height="62" fill="#1A1333"/><circle cx="46" cy="16" r="24" fill="#A78BFA" fill-opacity="0.25"/><rect x="18" y="9" width="26" height="44" rx="5" fill="#251D47" stroke="#C4B5FD" stroke-width="1.4"/><polygon points="28,25 38,31 28,37" fill="#EDE9FE"/></svg>`,
+  coverpick: `<svg width="62" height="62" viewBox="0 0 62 62" fill="none"><rect width="62" height="62" fill="#291B0E"/><circle cx="46" cy="14" r="24" fill="#FBBF24" fill-opacity="0.2"/><rect x="13" y="15" width="22" height="30" rx="4" transform="rotate(-8 13 15)" fill="#422B15" stroke="#FCD34D" stroke-opacity="0.55" stroke-width="1.2"/><rect x="25" y="14" width="24" height="32" rx="4" transform="rotate(6 25 14)" fill="#573719" stroke="#FDE68A" stroke-width="1.4"/><circle cx="35" cy="25" r="3" fill="#FEF3C7"/></svg>`,
+  auth: `<svg width="62" height="62" viewBox="0 0 62 62" fill="none"><rect width="62" height="62" fill="#0B2622"/><circle cx="46" cy="16" r="24" fill="#34D399" fill-opacity="0.22"/><circle cx="31" cy="31" r="16" fill="#113832" stroke="#6EE7B7" stroke-width="1.5"/><path d="M31 22v9.5l6.5 3.5" stroke="#D1FAE5" stroke-width="2" stroke-linecap="round"/></svg>`
+};
+
+function ic(name, size = 16) {
+  if (name === "logo") return SVG_PATHS.logo;
+  return `<span class="svg-ic" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${SVG_PATHS[name] || ""}</svg></span>`;
+}
+
+document.getElementById("brand-mark").innerHTML = ic("logo");
+document.getElementById("btn-collapse").innerHTML = ic("sidebar", 16);
+document.getElementById("ic-space-plus").innerHTML = ic("plus", 14);
+document.getElementById("ic-side-gear").innerHTML = ic("settings", 15);
+
+/* ================= 导航与全局状态 ================= */
+const NAV_ITEMS = [
+  { id: "board", label: "开始创作", icon: "spark" },
+  { id: "sources", label: "原始录像", icon: "film" },
+  { id: "data", label: "播放数据", icon: "chart" },
+  { id: "prefs", label: "AI 口味", icon: "sliders" },
+  { id: "folders", label: "本地目录", icon: "folder" }
+];
+const PAGES = NAV_ITEMS.map(n => n.id);
+const hashPage = () => { const h = location.hash.slice(1); return PAGES.includes(h) ? h : "board"; };
+
+let S = null, L = null, page = hashPage();
+let feedTab = "todo", gateFilter = "", searchQ = "", uploadMsg = "", aiStarting = null;
+let openId = null, openKind = null, picked = new Set(), coverSel = {}, dirty = {}, flashId = null, tagSel = {}, dataTier = "72h", dataPlat = "", pubSel = {};
+let wasBusy = null, liveSig = "";
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const file = p => "/file?path=" + encodeURIComponent(p);
+const hm = t => (t || "").slice(5, 16).replace("T", " ");
+const fmt = (v, pct) => v == null ? "–" : pct ? (v * 100).toFixed(1) + "%" : v >= 10000 ? (v / 10000).toFixed(2) + "万" : Math.round(v);
+function fmtClock(sec) {
+  if (!sec || sec <= 0) return "";
+  const s = Math.round(sec), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+  return h > 0
+    ? `${h}:${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`
+    : `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+}
+
+function toast(t, ok = true) {
+  const e = $("#toast");
+  e.textContent = t;
+  e.style.borderColor = ok ? "rgba(52, 211, 153, 0.48)" : "rgba(248, 113, 113, 0.52)";
+  e.style.display = "block";
+  clearTimeout(e._t);
+  e._t = setTimeout(() => (e.style.display = "none"), ok ? 2600 : 6500);
+}
+
+function modal(title, body, okText, onOk, danger) {
+  $("#mbox").innerHTML = `<h3>${esc(title)}</h3><div class="dim" style="font-size:13.5px;line-height:1.75">${body}</div><div class="btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn ${danger ? "bad" : "pri"}" id="mok">${esc(okText)}</button></div>`;
+  $("#modal").style.display = "flex";
+  $("#mok").onclick = () => { closeModal(); onOk(); };
+}
+function closeModal() { $("#modal").style.display = "none"; }
+
+async function load(manual) {
+  try {
+    const r = await fetch("/api/state");
+    S = await r.json();
+    if (S.错误) throw new Error(S.错误);
+    render();
+    if (openId) renderDrawer();
+    if (manual) toast("数据已刷新");
+  } catch (e) {
+    $("#main").innerHTML = `<div class="surface-card">读取失败：${esc(e.message)}</div>`;
+  }
+}
+
+async function post(body) {
+  try {
+    const r = await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    return await r.json();
+  } catch (e) {
+    return { 成功: false, 错误: "连不上工作台服务" };
+  }
+}
+
+async function act(body, msg, noReload) {
+  const j = await post(body);
+  if (j.成功) toast(msg || j.输出 || "已完成");
+  else toast(j.输出 || j.错误 || "操作未生效", false);
+  if (!noReload && !["打开", "打开平台"].includes(body.动作)) await load();
+  return j.成功;
+}
+
+const openFolder = k => act({ 动作: "打开", 文件夹: k }, "已在访达中打开");
+const reveal = p => act({ 动作: "打开", 路径: p }, "已在访达中定位");
+const openPlat = (plat, which) => act({ 动作: "打开平台", 平台: plat, 页面: which });
+
+/* ================= 流程环节映射 ================= */
+const COLS = [
+  ["inbox", "inbox", "待整理", "ai", "p1"],
+  ["sort", "film", "整理中", "ai", "p1"],
+  ["recap", "doc", "AI 复盘选片", "ai", "p1"],
+  ["pick", "spark", "挑片段", "me", "p2"],
+  ["cut", "scissors", "AI 剪辑中", "ai", "p2"],
+  ["review", "play", "看成片", "me", "p2"],
+  ["copy", "doc", "AI 写文案", "ai", "p3"],
+  ["cover", "image", "AI 做封面", "ai", "p3"],
+  ["coverpick", "image", "选封面", "me", "p3"],
+  ["auth", "check", "确认发布", "me", "p4"],
+  ["pub", "clock", "定时发布", "ai", "p4"],
+  ["data", "chart", "已发布", "ai", "p4"]
+];
+const PHASES = [
+  { id: "p1", name: "① 素材与复盘" },
+  { id: "p2", name: "② 选片与剪辑" },
+  { id: "p3", name: "③ 文案与封面" },
+  { id: "p4", name: "④ 排期与数据" }
+];
+const STUDIO_GATES = [
+  { col: "pick", title: "挑片段", desc: "勾出值得剪的高光片段", color: "c-cyan", cta: "去挑片" },
+  { col: "review", title: "看成片", desc: "预览竖屏成片，通过或打回", color: "c-violet", cta: "去看片" },
+  { col: "coverpick", title: "选封面", desc: "三张候选封面挑最吸睛的", color: "c-amber", cta: "选封面" },
+  { col: "auth", title: "确认发布", desc: "核对标题，一键排期定时", color: "c-emerald", cta: "去发布" }
+];
+
+const CI = Object.fromEntries(COLS.map((c, i) => [c[0], i]));
+const GATE = { pick: "挑选", review: "看片", coverpick: "选封面", auth: "确认发布" };
+const gateOn = col => GATE[col] && (S.配置.AI代审 || {})[GATE[col]];
+const pubsOf = cid => S.发布.filter(p => p.clip_id === cid).sort((a, b) => (S.配置.发布平台 || []).indexOf(a.平台) - (S.配置.发布平台 || []).indexOf(b.平台));
+const activePubs = ps => ps.filter(p => !["已废弃", "已撤回"].includes(p.状态));
+
+function pubCol(p, k) {
+  if (p.状态 === "需人工") { const b = p.之前; return b === "待发布" || b === "已定时" ? "pub" : b === "已发布" ? "data" : "auth"; }
+  if (p.状态 === "草稿") { if (!p.封面竖文件) return (k.封面候选 || []).length ? "coverpick" : "cover"; if (!p.封面横文件) return "cover"; return "auth"; }
+  if (p.状态 === "待发布" || p.状态 === "已定时") return "pub";
+  if (p.状态 === "已发布") return "data";
+  return null;
+}
+
+function clipCol(k, ps) {
+  const b = k.之前;
+  if (k.状态 === "候选") return "pick";
+  if (k.状态 === "放弃") return "off";
+  if (k.状态 === "待剪" || k.状态 === "剪辑中") return "cut";
+  if (k.状态 === "已剪辑") return "review";
+  if (k.状态 === "需人工") return b === "候选" ? "pick" : b === "已剪辑" ? "review" : "cut";
+  const act = activePubs(ps);
+  if (ps.length && !act.length) return "off";
+  const plats = S.配置.发布平台 || [];
+  if (!act.length || plats.some(pl => !ps.some(p => p.平台 === pl))) return "copy";
+  return act.map(p => pubCol(p, k)).filter(Boolean).sort((a, b) => CI[a] - CI[b])[0] || "data";
+}
+
+function running(ids) { return !!(L && L.在干活 && (L.对象 || []).some(o => ids.includes(o))); }
+
+function items() {
+  const out = [];
+  for (const f of S.收件 || []) {
+    const col = f.状态 === "整理中" ? "sort" : "inbox";
+    out.push({
+      type: "file", id: "file:" + f.文件, ids: [f.文件], title: f.文件, col, phase: COLS[CI[col]][4], f,
+      state: col === "sort" ? "run" : "queue",
+      label: col === "sort" ? "整理中" : "新录像待整理"
+    });
+  }
+  for (const s of S.素材) {
+    const n = S.切片.filter(k => k.source_id === s.source_id).length;
+    let col;
+    if (s.状态 === "待整理") col = "sort";
+    else if (s.状态 === "已整理") col = "recap";
+    else if (s.状态 === "需人工") col = s.之前 === "待整理" ? "sort" : "recap";
+    else if (s.状态 === "已复盘" && !n) col = "recap";
+    else continue;
+    const err = s.状态 === "需人工", run = running([s.source_id]), doneNoClip = s.状态 === "已复盘" && !n;
+    const label = err
+      ? "需处理"
+      : run
+      ? (col === "sort" ? "AI 整理归档中" : "AI 转写复盘中")
+      : doneNoClip
+      ? "已复盘 · 0条合格候选"
+      : (col === "sort" ? "排队整理" : "排队转写复盘");
+    out.push({
+      type: "source", id: s.source_id, ids: [s.source_id], title: s.标题 || s.source_id, col, phase: COLS[CI[col]][4], s, objs: [s],
+      state: err ? "err" : run ? "run" : doneNoClip ? "ok" : "queue",
+      label
+    });
+  }
+  for (const k of S.切片) {
+    const ps = pubsOf(k.clip_id), col = clipCol(k, ps), ids = [k.clip_id, ...ps.map(p => p.publish_id)];
+    const objs = [k, ...ps], errP = ps.filter(p => p.状态 === "需人工"), err = k.状态 === "需人工" || errP.length > 0, run = running(ids);
+    const me = COLS[CI[col]] && COLS[CI[col]][3] === "me" && !gateOn(col);
     let label;
-    if(col==="off")label=k.状态==="放弃"?"不剪了":"决定不发";
-    else if(err)label="出错了";
-    else if(me)label="等你";
-    else if(gateOn(col))label="AI 代审中";
-    else if(run)label="进行中";
-    else if(col==="pub"){const t=activePubs(ps).filter(p=>p.状态==="已定时").map(p=>p.发布时间).sort()[0];label=activePubs(ps).some(p=>p.状态==="待发布")?"排队设定时":t?"已定时 "+hm(t):"已定时"}
-    else if(col==="data")label="已发布";
-    else label="排队中";
-    out.push({type:"clip",id:k.clip_id,ids,title:k.标题,col,k,ps,objs,errP,
-      state:col==="off"?"off":err?"err":me?"me":run?"run":["pub","data"].includes(col)&&!activePubs(ps).some(p=>p.状态==="待发布")?"ok":"queue",label})}
-  return out}
-const mineItems=()=>items().filter(x=>x.state==="me"||x.state==="err");
+    if (col === "off") label = k.状态 === "放弃" ? "已放弃" : "不发布";
+    else if (err) label = "需处理";
+    else if (me) label = COLS[CI[col]][2];
+    else if (col === "pub") {
+      const t = activePubs(ps).filter(p => p.状态 === "已定时").map(p => p.发布时间).sort()[0];
+      label = activePubs(ps).some(p => p.状态 === "待发布") ? "待设定时" : t ? "定时 " + hm(t) : "已定时";
+    } else if (col === "data") label = "已发布";
+    else label = COLS[CI[col]][2];
+    out.push({
+      type: "clip", id: k.clip_id, ids, title: k.标题, col, phase: col === "off" ? "off" : COLS[CI[col]][4], k, ps, objs, errP,
+      state: col === "off" ? "off" : err ? "err" : me ? "me" : run ? "run" : ["pub", "data"].includes(col) && !activePubs(ps).some(p => p.状态 === "待发布") ? "ok" : "queue",
+      label
+    });
+  }
+  return out;
+}
 
-/* "下一步:谁、大约何时" */
-function nextText(x){
-  const cool=x.objs&&coolOf(x.objs);
-  if(x.state==="me")return "👤 下一步:你 — "+ME_DO[x.col];
-  if(x.state==="err")return "👤 下一步:你 — 看原因,点下面的按钮继续";
-  if(x.state==="off")return "";
-  if(x.state==="done")return "复盘写好了,这场没有挑出能剪的片段(点开看复盘)";
-  if(x.type==="file"&&x.f.状态==="还在写入")return `录像还在写入,约 ${dur(Math.max(60,x.f.可开始秒))}后开始整理`;
-  if(x.state==="run"){const sec=L&&L.开始?Math.max(0,Math.round((Date.now()-new Date(L.开始))/1000)):0;return `🤖 AI 正在做 · 已 ${dur(sec)}`}
-  if(x.col==="pub"&&x.state==="ok"){const t=activePubs(x.ps).filter(p=>p.状态==="已定时").map(p=>p.发布时间).sort()[0];return `⏰ ${hm(t)} 平台自动发出;到点后 AI 去后台核对、回填链接`}
-  if(x.col==="data"){const t=nextMetric(x.ps);return t?`📊 约 ${t.at} 采集 ${t.tier} 数据`:"✅ 24h/72h/7d 数据都采完了"}
-  if(cool)return `🤖 上次失败,约 ${cool.重试时间} 自动重试`;
-  if(!(S.自动处理||{}).开启)return "🤖 自动处理已关,AI 不会开工(左下角打开)";
-  const nu=L&&L.下一步;
-  if(nu&&(nu.对象||[]).some(o=>x.ids.includes(o))){
-    if(L.在干活)return "🤖 下一个就做它 · 等手上这步做完";
-    const n=L.下次检查秒;return "🤖 下一个就做它 · "+(n>0?`约 ${dur(n)}后开始`:"马上开始")}
-  return "🤖 排队中 · 前面的做完就轮到"}
-function nextMetric(ps){let best=null;
-  for(const p of activePubs(ps)){if(p.状态!=="已发布"||!p.发布时间)continue;const t0=new Date(p.发布时间).getTime();
-    for(const [tier,h] of [["24h",24],["72h",72],["7d",168]]){if(!(p.数据||{})[tier]){const at=t0+h*3600e3;if(!best||at<best.t)best={t:at,tier};break}}}
-  if(!best)return null;const d=new Date(best.t);
-  return {tier:best.tier,at:best.t<Date.now()?"现在":`${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`}}
+const mineItems = () => items().filter(x => x.state === "me" || x.state === "err");
 
-/* 出错后能去哪(和服务端 RESUME 一致) */
-const RESUME={source:{待整理:"重新整理",已整理:"重试转写复盘",已复盘:"我处理好了,继续"},
-  clip:{待剪:"让 AI 重剪",已剪辑:"我处理好了,去看片",候选:"退回候选",放弃:"不剪了"},
-  pub:{待发布:"让 AI 重试发布",已定时:"我已在平台设好定时",已发布:"已经发出去了",草稿:"退回草稿",已废弃:"这个平台不发了"}};
-function resumeOpts(kind,obj){const b=obj.之前;const all=RESUME[kind];let first;
-  if(kind==="source")first=b==="待整理"?"待整理":"已整理";
-  else if(kind==="clip")first=b==="已剪辑"?"已剪辑":b==="候选"?"候选":"待剪";
-  else first=b==="已定时"?"已定时":b==="草稿"?"草稿":"待发布";
-  return [first,...Object.keys(all).filter(k=>k!==first)].map(to=>({to,t:all[to]}))}
-const resumeBtn=(kind,id,to,t,cls="")=>`<button class="btn xs ${cls}" onclick="event.stopPropagation();resume('${kind}','${esc(id)}','${to}')">${esc(t)}</button>`;
-async function resume(kind,id,to){if(await act({动作:"恢复",对象:kind,id,状态:to},"已处理,AI 下一轮接着做"))flash(id.split("@")[0])}
-const needLogin=p=>/登录|扫码|login/i.test(p.原因||"");
+const RESUME = {
+  source: { 待整理: "重新整理", 已整理: "重试转写复盘", 已复盘: "标记复盘完成" },
+  clip: { 待剪: "重新剪辑", 已剪辑: "直接进入看片", 候选: "退回候选", 放弃: "放弃剪辑" },
+  pub: { 待发布: "重试自动发布", 已定时: "已在后台设好定时", 已发布: "已手动发出", 草稿: "退回草稿", 已废弃: "取消该平台发布" }
+};
+function resumeOpts(kind, obj) {
+  const b = obj.之前, all = RESUME[kind];
+  let first = kind === "source" ? (b === "待整理" ? "待整理" : "已整理") : kind === "clip" ? (b === "已剪辑" ? "已剪辑" : b === "候选" ? "候选" : "待剪") : (b === "已定时" ? "已定时" : b === "草稿" ? "草稿" : "待发布");
+  return [first, ...Object.keys(all).filter(k => k !== first)].map(to => ({ to, t: all[to] }));
+}
+const resumeBtn = (kind, id, to, t, cls = "") => `<button class="btn xs ${cls}" onclick="event.stopPropagation();resume('${kind}','${esc(id)}','${to}')">${esc(t)}</button>`;
+async function resume(kind, id, to) {
+  if (await act({ 动作: "恢复", 对象: kind, id, 状态: to }, "已恢复，正在启动 AI 重试")) {
+    flash(id.split("@")[0]);
+    if (["待整理", "已整理", "待剪", "待发布"].includes(to)) {
+      closeDrawer();
+      await runAiNow("正在重新执行处理…");
+    }
+  }
+}
+const needLogin = p => /登录|扫码|login/i.test(p.原因 || "");
 
-/* ================= 渲染 ================= */
-function render(){
-  document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("on",b.dataset.p===page));
-  const m=mineItems(),b=$("#b-board");b.style.display=m.length?"":"none";b.textContent=m.length;b.classList.toggle("red",m.some(x=>x.state==="err"));
-  $("#proj").textContent="项目:"+S.项目路径;renderSettings();
-  $("#main").className="wrap"+(page==="board"?" wide":"");
-  $("#main").innerHTML=({board,sources,data,prefs,folders})[page]();
+/* ================= 渲染外框 ================= */
+function renderChrome() {
+  const m = mineItems();
+  const hasErr = m.some(x => x.state === "err");
+  $("#nav-list").innerHTML = NAV_ITEMS.map(n => `
+    <button class="nav-btn ${page === n.id ? "on" : ""}" onclick="go('${n.id}')">
+      ${ic(n.icon, 17)}
+      <span class="hide-col">${esc(n.label)}</span>
+      ${n.id === "board" && m.length ? `<span class="nav-badge ${hasErr ? "err" : ""} hide-col">${m.length}</span>` : ""}
+    </button>
+  `).join("");
+
+  const isLocal = Boolean(S.项目路径);
+  $("#space-label").textContent = "本地工作空间";
+
+  const curNav = NAV_ITEMS.find(n => n.id === page) || NAV_ITEMS[0];
+  const auto = (S.自动处理 || {}).开启;
+  $("#top-crumb").innerHTML = `<b style="color:var(--text-primary)">${esc(curNav.label)}</b><span style="color:var(--text-muted)">·</span><span>${isLocal ? "本地 SQLite (data/sop.db)" : "请访问本机 http://127.0.0.1:8765/ 连接本地 SQLite"}</span>`;
+  $("#top-actions").innerHTML = `
+    <button class="top-pill ${auto ? "on" : ""}" onclick="toggleAuto(${!auto})">
+      <span class="dot ${L && L.在干活 ? "busy" : auto ? "idle" : ""}"></span>
+      <span>${L && L.在干活 ? "AI 运行中" : auto ? "自动巡检：开" : "自动巡检：关"}</span>
+    </button>
+    <button class="top-pill" onclick="openSettings()">
+      ${ic("settings", 14)}
+      <span>设置</span>
+    </button>
+    <button class="icon-ghost" title="刷新" onclick="load(true)">${ic("refresh", 15)}</button>
+  `;
+  renderLiveSide();
+}
+
+function renderLiveSide() {
+  const dot = $("#side-dot"), tt = $("#side-engine-title"), sub = $("#side-engine-sub");
+  if (!dot || !tt || !sub) return;
+  if (!L) {
+    dot.className = "dot idle";
+    tt.textContent = `${(S && S.配置 && S.配置.驱动AI) || "AI"} 就绪`;
+    sub.textContent = "点击配置引擎与规则";
+    return;
+  }
+  if (L.错误) {
+    dot.className = "dot err";
+    tt.textContent = "服务未连接";
+    sub.textContent = "正在自动重连…";
+    return;
+  }
+  if (L.在干活) {
+    dot.className = "dot busy";
+    tt.textContent = L.说明 || "AI 运行中";
+    sub.textContent = (L.对象 && L.对象[0]) || "后台处理中";
+  } else {
+    dot.className = L.开启 ? "dot idle" : "dot";
+    tt.textContent = `${(S && S.配置 && S.配置.驱动AI) || "AI"} · ${(S && S.配置 && S.配置.剪辑工具) || "ffmpeg"}`;
+    sub.textContent = L.开启 ? "后台巡检已开启" : "手动触发模式 · 点击设置";
+  }
+}
+
+function render() {
+  if (!S) return;
+  renderChrome();
+  $("#main").innerHTML = ({ board, sources, data, prefs, folders })[page]();
+  const si = $("#search-inp");
+  if (si) {
+    si.value = searchQ;
+    si.oninput = e => { searchQ = e.target.value; renderFeedOnly(); };
+  }
+  bindDockDrop();
   renderBulk();
 }
-function board(){
-  const xs=items(),m=xs.filter(x=>x.state==="me"||x.state==="err").sort((a,b)=>(b.state==="err")-(a.state==="err")||CI[a.col]-CI[b.col]);
-  const off=xs.filter(x=>x.state==="off");
-  const chips=(showAllTodo?m:m.slice(0,8)).map(x=>`<span class="chip ${x.state}" onclick="openItem('${esc(x.type)}','${esc(x.id)}')"><b>${x.state==="err"?"⚠️ 出错":esc(COLS[CI[x.col]][2])}</b><span>${esc(x.title)}</span></span>`).join("");
-  const inboxN=(S.收件||[]).length;
-  let h=`<div class="topbar"><h2>工作台</h2><span class="dim">从录像放进来到看数据,每条视频在哪一步、下一步谁来做,都在这里。点卡片看详情。</span>
-    <span style="margin-left:auto" class="btns"><button class="btn sm" onclick="openFolder('待加工')">📥 放录像${inboxN?`(${inboxN} 个还没整理)`:""}</button><button class="btn sm" onclick="openFolder('成片')">📂 成片</button></span></div>
-   <div class="inbox"><span class="lab">${m.length?`👤 等你处理 ${m.length} 件`:"👤 现在没有要你做的事"}</span>${chips}
-    ${m.length>8?`<a class="dim" onclick="showAllTodo=!showAllTodo;render()">${showAllTodo?"收起":"还有 "+(m.length-8)+" 件 ›"}</a>`:""}
-    ${!m.length?`<span class="dim">${xs.some(x=>x.state==="queue"||x.state==="run")?"AI 在处理,有要你拍板的会出现在这里。":"把录像放进「待加工」就能开始。"}</span>`:""}</div>
-   <div class="board">${COLS.map(([c,ic,name,who])=>{const it=xs.filter(x=>x.col===c);const run=it.filter(x=>x.state==="run").length,q=it.filter(x=>x.state==="queue").length;
-     const w=who==="me"?(gateOn(c)?"🤖代审":"👤 你"):"🤖 AI";
-     if(!it.length)return `<div class="col empty ${who}" title="${esc(name)}:空"><h4><span>${ic}</span><span class="nm">${esc(name)}</span><span class="who">0</span></h4></div>`;
-     const stat=who==="me"&&!gateOn(c)?`${it.length} 件等你`:[run?`做 ${run}`:"",q?`排 ${q}`:""].filter(Boolean).join(" · ")||it.length+" 件";
-     return `<div class="col ${who}"><h4><span>${ic}</span><span class="nm">${esc(name)}</span><span class="who">${w} · ${stat}</span></h4>${it.map(card).join("")}</div>`}).join("")}</div>
-   ${off.length?`<details class="offzone"><summary>🗃 不做了(${off.length}):不剪的片段、决定不发的作品,点开可以改回来</summary><div class="list">${off.map(card).join("")}</div></details>`:""}`;
-  return h}
-function card(x){
-  const pick=x.col==="pick"&&x.state==="me"&&x.type==="clip";
-  const cls={me:"me",err:"err",run:"run"}[x.state]||"";
-  const pillCls={me:"me",err:"err",run:"run",queue:"queue",ok:"ok",wait:"",done:"",off:""}[x.state];
-  let h=`<div class="vc ${cls} ${flashId===x.id?"flash":""}" onclick="openItem('${x.type}','${esc(x.id)}')">`;
-  if(pick)h+=`<input type="checkbox" class="ck" ${picked.has(x.id)?"checked":""} onclick="event.stopPropagation();togglePick('${esc(x.id)}',this.checked)">`;
-  if(x.type!=="clip")h+=`<div class="kind">${x.type==="file"?"🎞 新录像":"🎙 整场录像"}</div>`;
-  h+=`<div class="tt">${esc(x.title)}</div><div class="row"><span class="pill ${pillCls}">${x.state==="run"?'<span class="dot busy" style="width:7px;height:7px;margin-right:4px"></span>':""}${esc(x.label)}</span>`;
-  if(x.type==="clip"){const k=x.k;
-    if(k.重剪次数>0&&["cut","review"].includes(x.col))h+=`<span class="pill re">🔁 第 ${k.重剪次数+1} 版</span>`;
-    const d=k.成片时长_秒?Math.round(k.成片时长_秒)+"秒":Math.round((k.预览.止||0)-(k.预览.起||0))+"秒片段";h+=`<span class="dim" style="font-size:11px">${d}</span>`}
-  if(x.type==="file")h+=`<span class="dim" style="font-size:11px">${x.f.大小MB} MB</span>`;
-  h+=`</div>`;
-  if(x.type==="clip"&&x.ps.length)h+=`<div class="row plats">${x.ps.map(platBadge).join("")}</div>`;
-  if(x.type==="clip"&&x.k.重剪次数>0&&x.k.打回原因&&["cut","review"].includes(x.col))h+=`<div class="re">你的意见:${esc(x.k.打回原因)}</div>`;
-  if(x.type==="clip"&&(x.k.重叠||[]).length&&["pick","cut","review"].includes(x.col))h+=`<div class="warn">⚠️ ${x.k.重叠.map(o=>`与 ${esc(o.片段.split("-").pop())} 重叠 ${o.秒} 秒`).join(";")}</div>`;
-  if(x.state==="err")h+=errBlock(x,true);
-  else{const nt=nextText(x);if(nt)h+=`<div class="nx">${esc(nt)}</div>`;
-    const cool=x.objs&&coolOf(x.objs);if(cool&&x.state==="queue"){const r=lastFail(x.objs);
-      if(r)h+=`<div class="why">${r.结果==="卡权限"?"🔒 卡在权限(无人值守时没人能批):":"上次失败:"}${esc(r.说明)}</div>`;
-      h+=`<div class="btns"><button class="btn xs pri" onclick="event.stopPropagation();retryNow(${esc(JSON.stringify(x.ids))})">现在重试</button></div>`}}
-  return h+`</div>`}
-function platBadge(p){const st=p.状态,c=st==="需人工"?"err":st==="已发布"||st==="已定时"?"ok":st==="待发布"?"ai":st==="草稿"?"me":"off";
-  const tip=`${p.平台}:${st}${st==="已定时"?" "+hm(p.发布时间):""}${st==="需人工"?" · "+(p.原因||""):""}`;
-  return `<span class="pf ${c}" title="${esc(tip)}">${esc(AB[p.平台]||p.平台)}${PIC[st]||""}${st==="需人工"&&needLogin(p)?" 要扫码":""}</span>`}
-function errBlock(x,compact){
-  const rows=[];
-  if(x.type==="source")rows.push({kind:"source",o:x.s,name:"录像"});
-  if(x.type==="clip"){if(x.k.状态==="需人工")rows.push({kind:"clip",o:x.k,name:"片段"});for(const p of x.errP)rows.push({kind:"pub",o:p,name:p.平台})}
-  return rows.map(r=>{const opts=resumeOpts(r.kind,r.o);const id=r.o.source_id||r.o.publish_id||r.o.clip_id;
-    const why=r.o.原因||"(没写原因,点开看处理记录)";
-    const login=r.kind==="pub"&&needLogin(r.o)?`<button class="btn xs pri" onclick="event.stopPropagation();openPlat('${esc(r.o.平台)}','登录')">打开${esc(r.o.平台)}登录页</button>`:"";
-    return `<div class="why">${rows.length>1||r.kind==="pub"?`<b>${esc(r.name)}:</b>`:""}${esc(why)}</div><div class="btns">${login}${(compact?opts.slice(0,2):opts).map((o,i)=>resumeBtn(r.kind,id,o.to,o.t,i===0&&!login?"pri":"")).join("")}</div>`}).join("")}
-async function retryNow(ids){if(await act({动作:"现在重试",对象:ids},"已解除等待,下一次检查就会重试"))flash(ids[0])}
-function flash(id){flashId=id;if(page==="board")render();setTimeout(()=>{flashId=null},2500)}
-function togglePick(id,on){on?picked.add(id):picked.delete(id);renderBulk()}
-function renderBulk(){const b=$("#bulk");if(page!=="board"||!picked.size){b.style.display="none";return}
-  b.style.display="flex";b.innerHTML=`<span>已选 <b>${picked.size}</b> 个片段</span><button class="btn pri" onclick="bulk('待剪')">✂️ 剪这些</button><button class="btn" onclick="bulk('放弃')">不剪</button><button class="btn" onclick="picked.clear();render()">取消选择</button><span class="dim" style="font-size:12px">要给 AI 写剪辑要求,点开单条</span>`}
-async function bulk(st){const ids=[...picked];if(await act({动作:"挑片段",状态:st,items:ids.map(id=>({id}))},st==="待剪"?`已交给 AI 剪 ${ids.length} 条`:`已标记不剪 ${ids.length} 条`)){picked.clear();render()}}
 
-/* ================= 左下角:实时状态、开关、设置 ================= */
-let L=null,wasBusy=null,liveSig="";
-async function pollLive(){try{L=await (await fetch("/api/live")).json()}catch(e){L={错误:1}}renderLive();
-  const sig=JSON.stringify([L&&L.在干活,L&&L.对象,L&&L.下一步&&L.下一步.对象,L&&L.下次检查秒>0]);
-  const idle=!openId&&!$("#drawer").classList.contains("open")&&!picked.size&&$("#modal").style.display!=="flex";
-  if(S&&wasBusy!==null&&wasBusy!==!!(L&&L.在干活)&&idle)load();        // AI 开工/收工:整页刷新
-  else if(S&&sig!==liveSig&&page==="board"&&idle)render();                // 只是"下一步"变了:重画卡片
-  liveSig=sig;wasBusy=!!(L&&L.在干活)}
-function renderLive(){const el=$("#live");if(!el)return;if(!L||L.错误){el.innerHTML=`<div class="live"><div class="hd"><span class="dot"></span>连不上工作台服务</div><div class="st">工作台服务没在运行。等几秒会自动重连;一直这样就让 AI 重启工作台。</div></div>`;return}
-  let h;
-  if(L.在干活){const sec=L.开始?Math.max(0,Math.round((Date.now()-new Date(L.开始))/1000)):0;
-    h=`<div class="hd"><span class="dot busy"></span>AI 正在干活</div><div class="st"><b>${esc(L.说明)}</b> · 已 ${dur(sec)}</div>
-     ${L.对象&&L.对象.length?`<div class="st">对象:${L.对象.slice(0,3).map(esc).join("、")}${L.对象.length>3?" 等 "+L.对象.length+" 个":""}</div>`:""}
-     ${(L.最近几步||[]).slice(-3).map(x=>`<div class="ls" title="${esc(x.内容)}">${x.类型==="说"?"💬":"⚙️"} ${esc(x.内容)}</div>`).join("")}
-     ${L.日志?`<div class="st"><a onclick="reveal('${esc(L.日志)}')">查看完整日志</a></div>`:""}`}
-  else if(!L.开启){h=`<div class="hd"><span class="dot off"></span>AI 没在干活</div><div class="st">自动处理已关,AI 不会自己开工。</div>`}
-  else if(L.下一步){const n=L.下次检查秒;h=`<div class="hd"><span class="dot idle"></span>AI 待命中</div><div class="st">下一步:<b>${esc(L.下一步.说明)}</b>${L.下一步.对象&&L.下一步.对象[0]?" · "+esc(L.下一步.对象[0])+(L.下一步.共>1?" 等 "+L.下一步.共+" 个":""):""}</div><div class="st">${n>0?`约 ${dur(n)}后开始`:"马上开始"}</div>`}
-  else{h=`<div class="hd"><span class="dot idle"></span>AI 空闲</div><div class="st">没有 AI 能做的活${mineItems().length?",等你处理工作台上的事":""}。${L.上次检查?` 上次检查 ${esc(L.上次检查)}`:""}</div>`}
-  if(L.上次&&!L.在干活){const ic={"✅":"✅","❌":"❌","👤":"👤"}[L.上次.结果]||"•";
-    h+=`<div class="st" style="margin-top:8px;border-top:1px solid var(--line);padding-top:6px">上一步 ${esc(L.上次.时间||"")} ${ic} ${esc(L.上次.环节||"")}<div class="ls" title="${esc(L.上次.说明)}">${esc(L.上次.说明)}</div></div>`}
-  el.innerHTML=`<div class="live">${h}</div>`}
-setInterval(pollLive,3000);setTimeout(pollLive,300);
-function renderAuto(){const a=S.自动处理||{};
-  const half=a.配置!==a.定时任务?`<div class="hint" style="color:var(--bad)">状态不一致,请关掉再打开一次</div>`:"";
-  $("#auto").innerHTML=`<div class="auto"><button class="sw ${a.开启?"on":""}" onclick="toggleAuto(${!a.开启})" title="自动处理"></button><div><div style="color:var(--text);font-size:13px">自动处理</div>
-   <div class="hint">${a.开启?`已开启 · 每 ${Math.round((a.间隔秒||300)/60)} 分钟看一次,做完一步马上接下一步`:"已关闭 · AI 不会自己开工"}</div>${half}</div></div>`}
-function toggleAuto(on){if(on)modal("打开自动处理?",`打开后,这台电脑会每隔几分钟检查一次:有 AI 能做的事(整理录像、复盘、剪辑、做封面、定时发布、看数据)就自动启动 AI 去做,做完一步马上接着做下一步,直到需要你拍板。<br><br>挑片段、看片、选封面、确认发布这些<b style="color:var(--gold)">仍然要你来点</b>,AI 不会替你决定。电脑要保持开机、不合盖休眠。`,"打开",()=>act({动作:"自动处理",开启:true},"自动处理已开启"));
-  else modal("关闭自动处理?","关闭后 AI 不会自己开工;正在做的那一步会做完。","关闭",()=>act({动作:"自动处理",开启:false},"自动处理已关闭"),true)}
-let gatesOpen=false;
-const GATE_INFO={
-  挑选:{t:"挑片段",w:"AI 会按选题标准,每场录像替你挑最多 3 条去剪,其余标为不剪。你不再看到候选列表。"},
-  看片:{t:"看成片",w:"AI 会替你判断成片能不能发:检查时长、版式、字幕错字。它看不出语气、节奏、事实对不对。画面里有其他人时会交还给你。"},
-  选封面:{t:"选封面",w:"AI 会替你从三张候选里选一张封面,你不再看到候选。"},
-  确认发布:{t:"确认发布",w:"AI 检查文案红线后,会<b>直接授权把视频发到你的公开账号</b>(仍然只定时,不立即发)。<br>发出去的内容代表你本人:措辞不当、泄露他人信息、平台违规,后果都由账号承担。<br>建议只在前面几步都跑顺、并且你会在定时前回看的情况下打开。"}};
-function renderGates(){const g=S.配置.AI代审||{};const on=Object.entries(GATE_INFO).filter(([k])=>g[k]).length;
-  $("#gates").innerHTML=`<details class="set" ${on||gatesOpen?"open":""} ontoggle="gatesOpen=this.open"><summary style="color:${on?"var(--bad)":"var(--dim)"}">AI 代审${on?` · 已开 ${on} 项`:""}</summary>
-   <div class="dim" style="font-size:11px;margin:4px 0 6px">打开后,这一步不等你,由 AI 替你决定</div>
-   ${Object.entries(GATE_INFO).map(([k,v])=>`<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><button class="sw ${g[k]?"on":""}" style="${g[k]?"background:var(--bad)":""}" onclick="toggleGate('${k}',${!g[k]})"></button><span style="color:${g[k]?"var(--bad)":"var(--text)"};font-size:13px">${v.t}</span></div>`).join("")}</details>`}
-function toggleGate(k,on){const v=GATE_INFO[k];
-  if(!on){act({动作:"代审",关卡:k,开启:false},"已关闭,这一步回到由你决定");return}
-  $("#mbox").innerHTML=`<h3 style="color:var(--bad)">⚠️ 打开「AI 代审·${v.t}」?</h3><div class="dim" style="font-size:14px;line-height:1.8">${v.w}<br><br>打开后,这一步<b style="color:var(--text)">不再等你确认</b>。每次 AI 代你做的决定都会记录为「AI代审」,随时可以关掉。</div>
-   <label style="display:flex;gap:8px;align-items:center;margin-top:14px;font-size:13px"><input type="checkbox" id="gack"> 我明白风险,由我承担 AI 代审的结果</label>
-   <div class="btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn bad" id="mok" disabled>仍然打开</button></div>`;
-  $("#modal").style.display="flex";$("#gack").onchange=e=>$("#mok").disabled=!e.target.checked;
-  $("#mok").onclick=()=>{closeModal();act({动作:"代审",关卡:k,开启:true},`AI 代审·${v.t} 已打开`)}}
-function renderSettings(){renderAuto();renderGates();const o=S.可选设置||{};const cur={驱动AI:S.配置.驱动AI,剪辑工具:S.配置.剪辑工具};
-  const lab={驱动AI:"驱动 AI(谁来干活)",剪辑工具:"剪辑工具"};
-  $("#settings").innerHTML=Object.entries(o).map(([k,opts])=>{const c=opts.find(x=>x.值===cur[k])||{};
-   return `<div class="set"><label>${lab[k]||k}</label><select onchange="changeSetting('${k}',this)">${opts.map(x=>`<option value="${esc(x.值)}" ${x.值===cur[k]?"selected":""}>${esc(x.值)}${x.已安装?"":"(未安装)"}</option>`).join("")}</select>
-   ${c.已安装===false?`<div class="hint" style="color:var(--bad)">这台电脑还没装 ${esc(c.值)},让 AI 运行环境检查帮你装</div>`:c.说明?`<div class="hint">${esc(c.说明)}</div>`:""}</div>`}).join("")}
-function changeSetting(k,sel){const v=sel.value,old=S.配置[k];const opt=(S.可选设置[k]||[]).find(x=>x.值===v)||{};
-  const warn=opt.已安装?"":`<br><span style="color:var(--bad)">注意:这台电脑还没装 ${esc(v)},切换后 AI 会用不了,需要先装好。</span>`;
-  sel.value=old;modal(`把${k}换成 ${v}?`,(k==="剪辑工具"?"只对之后新剪的视频生效,已经剪好的不受影响。":"下次启动 AI 时生效,正在进行的那一步不受影响。")+warn,"确认更换",()=>act({动作:"设置",项:k,值:v},"已更换"))}
-function go(p){page=p;location.hash=p;render();$("main").scrollTop=0}
-document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>go(b.dataset.p));
+function triggerVideoPicker() {
+  const inp = $("#vid-picker");
+  if (inp) inp.click();
+}
 
-/* ================= 其他页面 ================= */
-function folderCard(f){const ic={待加工:"📥",成片:"🎬",参考封面:"🖼",参考视频:"🎞",学习:"🧠"}[f.键]||"📁";
-  return `<div class="folder"><div class="ic">${ic}</div><b>${esc(f.名称)} <span class="cnt">${f.数量}</span></b><div class="dim">${esc(f.说明)}</div>
-   ${f.示例.length?`<div class="dim" style="font-size:12px">最近:${f.示例.map(esc).join("、")}</div>`:""}<div style="margin-top:auto;padding-top:6px"><button class="btn sm" onclick="openFolder('${f.键}')">📂 在访达打开</button></div></div>`}
-function folders(){return `<h2>文件夹</h2><p class="sub">所有东西都在项目文件夹里:<span style="color:var(--text)">${esc(S.项目路径)}</span></p><div class="grid folders">${S.文件夹.map(folderCard).join("")}</div>
-  <div class="help" style="margin-top:16px">放录像:直接把视频文件拖进「待加工」。处理完原片会挪到「待加工/已处理」,不会删除。<br>剪好的视频:在「成片」里,每条视频一个文件夹(视频、字幕、文案、封面都在里面)。</div>`}
-function sources(){
-  if(!S.素材.length&&!(S.收件||[]).length)return `<h2>录像与复盘</h2><p class="sub">还没有录像。</p><div class="card empty"><button class="btn pri" onclick="openFolder('待加工')">📂 打开待加工文件夹放录像</button></div>`;
-  const pill=s=>s.状态==="需人工"?`<span class="pill err">出错了</span>`:s.状态==="已复盘"?`<span class="pill ok">已复盘</span>`:`<span class="pill queue">${running([s.source_id])?"进行中":s.状态==="已整理"?"排队转写复盘":"排队整理"}</span>`;
-  return `<h2>录像与复盘</h2><p class="sub">每场录像 AI 会写一份复盘,并从里面挑出可以剪的片段。</p>`+
-   (S.收件||[]).map(f=>`<div class="card"><b>🎞 ${esc(f.文件)}</b> <span class="pill queue">${esc(f.状态)}</span> <span class="dim">${f.大小MB} MB · 在「待加工」里</span></div>`).join("")+
-   S.素材.map(s=>{const ks=S.切片.filter(k=>k.source_id===s.source_id);const c=st=>ks.filter(k=>k.状态===st).length;
-   return `<div class="card"><div class="btns" style="justify-content:space-between"><div><h3 style="margin:0">${esc(s.标题||s.source_id)} ${pill(s)}</h3><div class="dim">${esc(s.来源)} · ${esc(s.日期)} ${s.评分?"· "+esc(s.评分):""} · 挑出 ${ks.length} 个片段${ks.length?`(候选 ${c("候选")} · 要剪 ${ks.length-c("候选")-c("放弃")} · 不剪 ${c("放弃")})`:""}</div></div>
-    <div class="btns">${s.文件.文档.map(p=>`<button class="btn sm" onclick="openDoc('${esc(p)}')">📄 ${esc(p.split("/").pop().replace(".md",""))}</button>`).join("")||'<span class="dim">复盘还没写好</span>'}
-    ${s.文件.视频[0]?`<button class="btn sm" onclick="reveal('${esc(s.文件.视频[0])}')">📂 原片位置</button>`:""}</div></div>
-    ${s.摘要?`<p style="margin:10px 0 0">${esc(s.摘要)}</p>`:""}
-    ${s.状态==="需人工"?`<div class="next err" style="margin:12px 0 0">${errBlock({type:"source",s},false)}</div>`:""}
-    ${c("候选")?`<div class="btns" style="margin-top:10px"><button class="btn sm" onclick="restOff('${esc(s.source_id)}')">这场挑完了,剩下 ${c("候选")} 条候选都不剪</button></div>`:""}</div>`}).join("")}
-function restOff(sid){modal("剩下的候选都不剪?","没勾的候选会记为「不剪(未选)」,AI 以后总结你的口味时能分清\"不要\"和\"还没看\"。在「不做了」里随时可以改回来。","都不剪",()=>act({动作:"其余不剪",source_id:sid},"已标记"))}
+async function uploadVideos(fileList) {
+  const files = Array.from(fileList || []).filter(Boolean);
+  if (!files.length) return;
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    if (!/\.(mp4|mov|mkv|m4v)$/i.test(f.name)) {
+      toast(`不支持的文件格式：${f.name}（仅支持 mp4 / mov / mkv / m4v）`, false);
+      continue;
+    }
+    const ok = await new Promise(resolve => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/upload?name=" + encodeURIComponent(f.name));
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded * 100) / e.total);
+          uploadMsg = `正在导入 ${f.name} (${pct}%)…`;
+          const el = $("#dock-live-title");
+          if (el) el.textContent = uploadMsg;
+        }
+      };
+      xhr.onload = () => {
+        uploadMsg = "";
+        try {
+          const j = JSON.parse(xhr.responseText || "{}");
+          if (xhr.status === 200 && j.成功) { toast(j.输出 || `已导入 ${f.name}`); resolve(true); }
+          else { toast(j.输出 || "导入失败", false); resolve(false); }
+        } catch (err) { toast("导入失败", false); resolve(false); }
+      };
+      xhr.onerror = () => { uploadMsg = ""; toast("无法连接本地工作台服务 (请确认访问 http://127.0.0.1:8765/)", false); resolve(false); };
+      xhr.send(f);
+    });
+    if (!ok) break;
+  }
+  await load();
+  pollLive();
+}
 
-function data(){
-  const tiers=["24h","72h","7d"],plats=[...new Set(S.发布.map(p=>p.平台))];
-  const vids=S.切片.map(k=>({k,ps:pubsOf(k.clip_id).filter(p=>!["草稿","已废弃"].includes(p.状态)&&(!dataPlat||p.平台===dataPlat))})).filter(v=>v.ps.length);
-  const n=new Set(S.发布.filter(p=>p.数据["72h"]||p.数据["7d"]).map(p=>p.publish_id)).size;
-  const agg=plats.map(pl=>{const ms=S.发布.filter(p=>p.平台===pl&&p.数据[dataTier]).map(p=>p.数据[dataTier]);const av=f=>ms.length?ms.reduce((s,m)=>s+(m[f]||0),0)/ms.length:null;
-    return {pl,n:ms.length,播放:av("播放"),完播率:av("完播率"),点赞:av("点赞"),涨粉:av("涨粉"),发:S.发布.filter(p=>p.平台===pl&&["已定时","已发布"].includes(p.状态)).length}});
-  return `<h2>数据</h2><p class="sub">按视频分组,每个平台一行。发布后 AI 会在 24 小时、72 小时、7 天各看一次;"上次核对"是 AI 最后一次在平台后台亲眼看到的情况。</p>
-  <div class="btns" style="margin-bottom:14px"><div class="seg">${tiers.map(t=>`<button class="${t===dataTier?"on":""}" onclick="dataTier='${t}';render()">${t}</button>`).join("")}</div>
-   <div class="seg"><button class="${dataPlat?"":"on"}" onclick="dataPlat='';render()">全部平台</button>${plats.map(p=>`<button class="${p===dataPlat?"on":""}" onclick="dataPlat='${esc(p)}';render()">${esc(p)}</button>`).join("")}</div></div>
-  ${vids.length?vids.map(v=>`<div class="card"><div class="btns" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0;cursor:pointer" onclick="openItem('clip','${esc(v.k.clip_id)}')">${esc(v.k.标题)}</h3><span class="dim">${esc(v.k.clip_id)}</span></div>${platTable(v.ps,dataTier)}</div>`).join("")
-   :'<div class="card empty">还没有排期或发布的作品</div>'}
-  <div class="card"><h3>各平台对比(${dataTier})</h3><table><tr><th>平台</th><th>已排期/发布</th><th>有数据</th><th>平均播放</th><th>平均完播</th><th>平均点赞</th><th>平均涨粉</th></tr>
-   ${agg.map(a=>`<tr><td>${esc(a.pl)}</td><td>${a.发}</td><td>${a.n}</td><td>${fmt(a.播放)}</td><td>${fmt(a.完播率,1)}</td><td>${fmt(a.点赞)}</td><td>${fmt(a.涨粉)}</td></tr>`).join("")}</table>
-   <div class="dim" style="margin-top:6px">不同平台的播放口径不一样,只适合看同一条视频在哪个平台更受欢迎。</div></div>
-  <div class="card"><h3>哪种做法效果更好</h3>${n<5?`<div class="help">现在满 72 小时的作品有 ${n} 条,不到 5 条,先不下结论。</div>`:""}
-   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${Object.entries(S.分组).map(([dim,rs])=>`<div><b>${esc(dim)}</b>${rs.length?`<table><tr><th>分组</th><th>条</th><th>播放</th><th>完播</th></tr>${rs.map(r=>`<tr><td>${esc(r.分组)}</td><td>${r.条数}</td><td>${fmt(r.平均播放)}</td><td>${fmt(r.平均完播率,1)}</td></tr>`).join("")}</table>`:'<div class="dim">暂无</div>'}</div>`).join("")}</div></div>`}
-function pubStatus(p){const s=p.状态;
-  if(s==="已定时")return `<span class="pill ok">已定时 ${hm(p.发布时间)}</span>`;if(s==="已发布")return `<span class="pill ok">已发布 ${hm(p.发布时间)}</span>`;
-  if(s==="需人工")return `<span class="pill err">需要你处理</span><div class="dim" style="color:#ffb4b4;margin-top:3px">${esc(p.原因)}</div>`;
-  if(s==="待发布")return `<span class="pill ai">已授权,等 AI 设定时</span>`;if(s==="草稿")return `<span class="pill me">草稿</span>`;
-  return `<span class="pill">${esc(s)}</span>`}
-function platTable(ps,tier){
-  return `<table><tr><th>平台</th><th>状态</th><th>作品链接</th><th>数据(${tier})</th><th>上次核对</th></tr>${ps.map(p=>{const m=(p.数据||{})[tier]||null;
-    const link=p.作品链接?`<a href="${esc(p.作品链接)}" target="_blank">打开作品 ↗</a>`:`<a onclick="openPlat('${esc(p.平台)}','后台')">去后台查看 ↗</a>`;
-    const ops=p.状态==="需人工"?`<div class="btns" style="margin-top:6px">${needLogin(p)?`<button class="btn xs pri" onclick="openPlat('${esc(p.平台)}','登录')">打开登录页</button>`:""}${resumeOpts("pub",p).slice(0,2).map((o,i)=>resumeBtn("pub",p.publish_id,o.to,o.t,i===0&&!needLogin(p)?"pri":"")).join("")}</div>`:"";
-    return `<tr><td><b>${esc(p.平台)}</b></td><td>${pubStatus(p)}${ops}</td><td>${link}${p.作品链接?`<br><a class="dim" style="font-size:12px" onclick="openPlat('${esc(p.平台)}','后台')">后台 ↗</a>`:""}</td>
-     <td>${m?`播放 ${fmt(m.播放)} · 完播 ${fmt(m.完播率,1)}<br>点赞 ${fmt(m.点赞)} · 涨粉 ${fmt(m.涨粉)}`:'<span class="dim">–</span>'}</td>
-     <td>${p.上次核对?`<span style="font-size:12.5px">${esc(hm(p.上次核对时间))} ${esc(p.上次核对)}</span>`:'<span class="dim">还没核对过</span>'}</td></tr>`}).join("")}</table>`}
+function bindDockDrop() {
+  const dock = $("#creation-dock");
+  if (!dock) return;
+  dock.ondragover = e => { e.preventDefault(); dock.classList.add("drag-over"); };
+  dock.ondragleave = e => { if (!dock.contains(e.relatedTarget)) dock.classList.remove("drag-over"); };
+  dock.ondrop = e => { e.preventDefault(); dock.classList.remove("drag-over"); if (e.dataTransfer.files.length) uploadVideos(e.dataTransfer.files); };
+}
 
-function prefs(){const P=S.偏好||{};const g=P.关卡||{},tags=P.标签||{};
-  const rate=(a,b)=>b?Math.round(a*100/b)+"%":"–";
-  const gates=["挑选","看片","选封面","确认发布"];
-  const topTags=gt=>Object.entries(tags[gt]||{}).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const hi=P.高优先级||{};
-  return `<h2>我的偏好</h2><p class="sub">你在每个关卡上采纳了什么、否定了什么、写了什么备注,都会记下来。AI 下次挑片段、剪辑、写文案、做封面时会照着你最近的口味来;同一规律反复出现,才会提"标准修改提案",你同意后才改。</p>
-  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">${gates.map(gt=>{const x=g[gt]||{次数:0,采纳:0,否定:0};
-    return `<div class="card" style="margin:0"><h3>${{挑选:"👤 挑片段",看片:"👤 看成片",选封面:"👤 选封面",确认发布:"👤 确认发布"}[gt]}</h3>
-     <div class="dim">${x.次数} 次决定 · 采纳 ${x.采纳} · 否定 ${x.否定}</div>
-     <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span class="dim" style="width:48px">采纳率</span><div class="bar" style="flex:1"><i style="width:${x.次数?x.采纳*100/x.次数:0}%"></i></div><b>${rate(x.采纳,x.次数)}</b></div>
-     ${topTags(gt).length?`<div class="dim" style="margin-top:8px">常见原因:</div><div class="tags">${topTags(gt).map(([t,n])=>`<span class="tag">${esc(t)} ×${n}</span>`).join("")}</div>`:'<div class="dim" style="margin-top:8px">还没有原因标签</div>'}</div>`}).join("")}</div>
-  <div class="card" style="margin-top:16px"><h3>挑片段:你更常选哪类</h3>
-   <div class="dim" style="margin-bottom:8px">AI 标"高优先级"的片段,你选中了 ${hi.y||0} / ${hi.n||0} 条(${rate(hi.y||0,hi.n||0)})——这个一致率高了,才适合打开「AI 代审·挑片段」。</div>
-   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${Object.entries(P.挑片||{}).map(([dim,rs])=>`<div><b>${esc(dim)}</b>${rs.length?`<table><tr><th>分组</th><th>挑过</th><th>选中率</th></tr>${rs.map(r=>`<tr><td>${esc(r.分组)}</td><td>${r.条数}</td><td>${rate(r.选中,r.条数)}</td></tr>`).join("")}</table>`:'<div class="dim">还没挑过</div>'}</div>`).join("")}</div></div>
-  <div class="card"><h3>最近的决定</h3>${(P.最近||[]).length?`<table><tr><th>时间</th><th>关卡</th><th>对象</th><th>结果</th><th>原因 / 备注</th></tr>${P.最近.map(d=>`<tr><td style="white-space:nowrap">${esc(hm(d.时间))}</td><td>${esc(d.关卡)}</td><td>${esc((d.对象ID||"").split("@")[0])}</td>
-     <td>${d.采纳?`<span class="pill ok">采纳</span>`:""}${d.否定?` <span class="pill bad">否定</span>`:""}</td><td>${d.标签?`<span class="dim">【${esc(d.标签)}】</span>`:""}${esc(d.备注||"")}${d.附件?` <span class="dim">📎 参考图</span>`:""}</td></tr>`).join("")}</table>`:'<div class="empty">还没有记录。之后你在工作台挑片段、看片、选封面、确认发布,都会记在这里。</div>'}</div>
-  <div class="card"><h3>AI 整理的偏好与提案</h3>
-   <div class="btns">${P.偏好文件?`<button class="btn sm" onclick="openDoc('${esc(P.偏好文件)}')">📄 我的偏好.md(AI 每次生成前会读,下半部分你可以自己写)</button>`:'<span class="dim">做过决定后会自动生成「学习/我的偏好.md」</span>'}
-   ${(P.提案||[]).map(p=>`<button class="btn sm" onclick="openDoc('${esc(p)}')">📄 ${esc(p.split("/").pop().replace(".md",""))}</button>`).join("")}</div>
-   <div class="dim" style="margin-top:8px">提案只是建议;要采纳,跟 AI 说"同意第 X 条提案",AI 才会改标准并记版本。</div></div>`}
+async function runAiNow(label) {
+  aiStarting = { label: label || "正在唤醒本机 AI 引擎…", startedAt: Date.now() };
+  render();
+  const ok = await act({ 动作: "立即执行" }, "已启动本机 AI 开始处理");
+  if (!ok) {
+    aiStarting = null;
+    render();
+    return;
+  }
+  setTimeout(pollLive, 450);
+  setTimeout(pollLive, 1500);
+}
 
-/* ================= 详情抽屉 ================= */
-function openItem(type,id){if(type==="file"){toast("录像还没整理,整理后会出现在这里");return}
-  openKind=type;openId=id;renderDrawer();$("#drawer").classList.add("open");$("#mask").style.display="block"}
-const openVideo=id=>openItem("clip",id);
-function closeDrawer(){if(Object.values(dirty).some(Boolean)&&!confirm("文案改了还没保存,确定关闭?"))return;dirty={};openId=null;$("#drawer").classList.remove("open");$("#mask").style.display="none";$("#drawer").innerHTML=""}
-async function openDoc(p){const t=await (await fetch(file(p))).text();openId=null;$("#drawer").innerHTML=`<div class="dh"><h2>${esc(p.split("/").pop())}</h2><button class="btn" onclick="reveal('${esc(p)}')">📂 在访达显示</button><button class="btn" onclick="closeDrawer()">关闭</button></div><div class="md">${esc(t)}</div>`;$("#drawer").classList.add("open");$("#mask").style.display="block"}
-function renderDrawer(){
-  const x=items().find(i=>i.id===openId&&i.type===openKind)||(openKind==="source"?null:items().find(i=>i.id===openId));
-  if(!x){if(openKind==="source"){const s=S.素材.find(s=>s.source_id===openId);if(s){go("sources");}}closeDrawer();return}
-  if(x.type==="source"){const s=x.s;
-    $("#drawer").innerHTML=`<div class="dh"><div style="flex:1"><h2>🎙 ${esc(x.title)}</h2><div class="dim">${esc(s.source_id)} · <span class="pill ${x.state}">${esc(x.label)}</span></div></div><button class="btn" onclick="closeDrawer()">关闭</button></div>
-     ${x.state==="err"?`<div class="next err"><div class="lead">⚠️ 这场录像卡住了</div>${errBlock(x,false)}<div class="dim" style="margin-top:8px">处理好后点上面的按钮,AI 下一轮马上接着做(不用等冷却)。</div></div>`:`<div class="next ai"><div class="lead">${esc(nextText(x))}</div><div class="dim">整理 → 转写 → 写复盘 → 挑候选片段。挑出片段后,这里会变成一张张片段卡。</div></div>`}
-     <div class="btns">${s.文件.文档.map(p=>`<button class="btn sm" onclick="openDoc('${esc(p)}')">📄 ${esc(p.split("/").pop())}</button>`).join("")}${s.文件.视频[0]?`<button class="btn sm" onclick="reveal('${esc(s.文件.视频[0])}')">📂 原片位置</button>`:""}</div>
-     ${s.备注?`<details open><summary>处理记录</summary><div class="md" style="margin-top:8px;max-height:300px">${esc(s.备注)}</div></details>`:""}`;return}
-  const {k,ps}=x;const folder=k.本地文件夹||k.成片;
-  $("#drawer").innerHTML=`<div class="dh"><div style="flex:1"><h2>${esc(k.标题)}</h2><div class="dim">${esc(k.clip_id)} · ${esc(COLS[CI[x.col]]?COLS[CI[x.col]][2]:"不做了")} · <span class="pill ${x.state}">${esc(x.label)}</span>${k.重剪次数>0?` <span class="pill re">🔁 第 ${k.重剪次数+1} 版</span>`:""}</div>
-    ${ps.length?`<div class="plats" style="margin-top:6px">${ps.map(platBadge).join("")}</div>`:""}</div>
-   ${folder?`<button class="btn" title="打开这条视频的文件夹" onclick="reveal('${esc(folder)}')">📂 文件夹</button>`:""}<button class="btn" onclick="closeDrawer()">关闭</button></div>
-   ${x.state==="err"?`<div class="next err"><div class="lead">⚠️ 卡住了,需要你看一下</div>${errBlock(x,false)}<div class="dim" style="margin-top:8px">处理好后点上面的按钮,AI 下一轮马上接着做(不用等冷却)。</div></div>`:""}
-   ${nextBox(x)}
-   ${ps.length&&!["pub","data"].includes(x.col)&&ps.some(p=>!["草稿","已废弃"].includes(p.状态))?`<details><summary>各平台状态</summary><div style="margin-top:8px">${platTable(ps,"72h")}</div></details>`:""}
-   <details><summary>片段信息</summary><div style="margin-top:8px"><div class="dim">原片 ${esc(k.起始)}–${esc(k.结束)} · ${esc(k.选题类型||"")} / ${esc(k.钩子类型||"")} · 优先级 ${esc(k.优先级||"-")}</div>
-    ${k.开头钩子?`<p>开头钩子:${esc(k.开头钩子)}</p>`:""}${k.概要?`<p>${esc(k.概要)}</p>`:""}${k.理由?`<p class="dim">为什么选它:${esc(k.理由)}</p>`:""}${k.剪辑要求?`<p>你的剪辑要求:${esc(k.剪辑要求)}</p>`:""}</div></details>
-   ${k.备注?`<details><summary>处理记录</summary><div class="md" style="margin-top:8px;max-height:260px">${esc(k.备注)}</div></details>`:""}`;
-  const vid=$("#drawer video[data-s]");if(vid){const s=+vid.dataset.s,e=+vid.dataset.e;vid.addEventListener("loadedmetadata",()=>vid.currentTime=s);vid.addEventListener("timeupdate",()=>{if(e&&vid.currentTime>e)vid.pause()})}
+async function pasteFromClipboard(pathText) {
+  const payload = pathText ? { 动作: "粘贴剪贴板视频", 路径: pathText } : { 动作: "粘贴剪贴板视频" };
+  uploadMsg = "正在读取剪贴板中的视频文件…";
+  const el = $("#dock-live-title");
+  if (el) el.textContent = uploadMsg;
+  const ok = await act(payload);
+  uploadMsg = "";
+  if (ok) { await load(); pollLive(); }
+  else render();
+}
+
+function removeInboxVideo(name) {
+  modal("从待处理队列移出该视频？", `视频 <b>${esc(name)}</b> 将移至本地 <code>待加工/已移出/</code> 文件夹妥善保留，绝不删除原文件。`, "确认移出", () => act({ 动作: "移出待加工", 文件: name }, "已移出待处理队列"));
+}
+
+function renderFeedOnly() {
+  const box = $("#feed-body");
+  if (box) box.innerHTML = renderFeedContent();
+}
+
+function go(p) {
+  page = p;
+  location.hash = p;
+  render();
+  $("main").scrollTop = 0;
+}
+
+/* ================= 核心页面 1: 开始创作 (三层清晰结构) ================= */
+function clickStudioGate(col) {
+  const waiting = items().filter(x => x.col === col && (x.state === "me" || x.state === "err"));
+  if (waiting.length === 1) {
+    openItem(waiting[0].type, waiting[0].id);
+    return;
+  }
+  feedTab = "todo";
+  gateFilter = gateFilter === col ? "" : col;
+  render();
+}
+
+function switchFeedTab(t) {
+  feedTab = t;
+  gateFilter = "";
+  render();
+}
+
+function board() {
+  const all = items();
+  const active = all.filter(x => x.state !== "off");
+  const off = all.filter(x => x.state === "off");
+  const mine = active.filter(x => x.state === "me" || x.state === "err");
+  const aiQueue = active.filter(x => ["queue", "run", "wait"].includes(x.state));
+  const published = active.filter(x => x.state === "ok");
+  const inboxN = (S.收件 || []).length;
+  const auto = (S.自动处理 || {}).开启;
+
+  // 若待办为空且有其它任务，自动切到非空标签避免空白困惑
+  if (feedTab === "todo" && !mine.length && active.length) {
+    if (aiQueue.length) feedTab = "ai";
+    else if (published.length) feedTab = "pub";
+  }
+
+  const isLocal = Boolean(S.项目路径);
+  const busyNow = !!(L && L.在干活) || Boolean(aiStarting);
+  const nextAi = L && L.下一步;
+  const canRunAi = !busyNow && (inboxN > 0 || Boolean(nextAi));
+  const runStartMs = (L && L.在干活 && L.开始) ? new Date(L.开始).getTime() : (aiStarting ? aiStarting.startedAt : Date.now());
+  const elapsedSec = Math.max(0, Math.floor((Date.now() - runStartMs) / 1000));
+  const activeStage = (L && L.在干活 && L.环节) || "";
+  const activeDesc = (L && L.在干活) ? (L.说明 || "AI 正在处理视频") : (aiStarting ? aiStarting.label : "");
+  const liveLine = (L && L.在干活)
+    ? (L.实时进度 || ((L.最近几步 && L.最近几步.length) ? L.最近几步[L.最近几步.length - 1].内容 : `正在处理 ${(L.对象 || []).join("、") || "当前视频"}…`))
+    : "正在启动本机任务脚本与模型引擎，请稍候…";
+  const stepOrder = [
+    ["0-整理", "整理归档"],
+    ["1-复盘选片", "转写与选片"],
+    ["2-剪辑", "竖屏剪辑"],
+    ["4-文案", "文案与封面"],
+    ["6-发布", "定时发布"]
+  ];
+
+  const dockTitle = uploadMsg
+    ? uploadMsg
+    : busyNow
+    ? activeDesc
+    : inboxN
+    ? `发现 ${inboxN} 个新录像可开始处理`
+    : nextAi
+    ? `待执行 AI 环节：${nextAi.说明}`
+    : "导入原始长录像开始创作";
+
+  const errMine = mine.filter(x => x.state === "err").length;
+  const clipMine = mine.length - errMine;
+  const dockSummary = clipMine
+    ? `当前有 <b>${clipMine} 条短视频</b>剪好等你拍板${inboxN ? `，另有 ${inboxN} 个新录像待整理` : ""}。点击下方任一关卡即可开始审核。`
+    : errMine
+    ? `有 <b>${errMine} 项任务</b>需要你点开处理或重试；也可随时拖拽或按 <span class="kbd">⌘V</span> 粘贴新视频继续导入。`
+    : busyNow
+    ? `正在本机后台处理 ${(L && L.对象 && L.对象[0]) || "当前视频"}，结果会自动写入本地 SQLite 数据库。`
+    : inboxN
+    ? `视频已进入本地「待加工」目录，点击右侧「立即运行 AI 处理」即可开始无损整理与语音转写。`
+    : `支持拖拽视频、点击选择，或在访达复制视频后直接按 <span class="kbd">⌘V</span> 粘贴进来，数据直存本机 SQLite。`;
+
+  return `
+    ${!isLocal ? `<div class="info-banner" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <span>当前打开的是云端静态页面。你的 SQLite 数据库与剪辑引擎运行在 Mac 本机，请打开本地地址正式使用。</span>
+      <a class="btn sm pri" href="http://127.0.0.1:8765/" style="text-decoration:none">打开本机 127.0.0.1:8765</a>
+    </div>` : ""}
+
+    <!-- 第一层：核心导入操作舱 (一眼看懂怎么开始) -->
+    <section class="hero-stage">
+      <h1 class="hero-headline">把一场长录像，变成多条竖屏短视频</h1>
+      <div class="how-steps">
+        <span class="how-step"><span class="how-num">1</span> 放入长录像</span>
+        <span class="how-arrow">→</span>
+        <span class="how-step"><span class="how-num">2</span> AI 自动拆条 · 剪辑 · 做封面</span>
+        <span class="how-arrow">→</span>
+        <span class="how-step"><span class="how-num">3</span> 你点选拍板 · 定时发抖音</span>
+      </div>
+
+      <div class="creation-dock" id="creation-dock">
+        <input type="file" id="vid-picker" accept=".mp4,.mov,.mkv,.m4v,video/*" multiple style="display:none" onchange="uploadVideos(this.files);this.value=''">
+        ${busyNow ? `
+          <div class="ai-run-panel">
+            <div class="ai-run-top">
+              <div class="ai-orb"><span class="ai-orb-core"></span></div>
+              <div class="ai-run-copy">
+                <div class="ai-run-head">
+                  <div class="ai-run-title">${esc(activeDesc)}</div>
+                  <span class="ai-run-timer" id="ai-elapsed">已运行 ${esc(fmtClock(elapsedSec) || "00:00")}</span>
+                </div>
+                <div class="ai-run-log" id="ai-live-line">${esc(liveLine)}</div>
+              </div>
+            </div>
+            <div class="ai-shimmer-track"><div class="ai-shimmer-bar"></div></div>
+            <div class="ai-run-steps">
+              ${stepOrder.map(([st, nm]) => {
+                const isNow = activeStage === st || (st === "4-文案" && activeStage === "5-封面");
+                return `<span class="ai-step-tag ${isNow ? "now" : ""}">${isNow ? '<span class="dot busy"></span>' : ""}${esc(nm)}</span>`;
+              }).join("")}
+            </div>
+          </div>
+        ` : inboxN > 0 ? `
+          <div class="dock-selected-wrap">
+            <div class="dock-sel-hd">
+              <div class="dock-sel-title">
+                <span class="dot idle"></span>
+                <span id="dock-live-title">${esc(uploadMsg || `已选入 ${inboxN} 个长录像，随时可启动 AI 拆条`)}</span>
+              </div>
+              <span class="dim" style="font-size:12px">点击封面可试看 · 支持 <span class="kbd">⌘V</span> 粘贴</span>
+            </div>
+            <div class="dock-sel-grid">
+              ${(S.收件 || []).map(f => `
+                <div class="sel-vid-card" onclick="openItem('file','file:${esc(f.文件)}')" title="点击试看 ${esc(f.文件)}">
+                  <div class="sel-vid-thumb">
+                    ${f.缩略图 ? `<img src="${esc(f.缩略图)}" alt="${esc(f.文件)}">` : ""}
+                    <span class="sel-play-btn">${ic("play", 13)}</span>
+                    <button class="sel-rm-btn" title="移出队列（保留原文件）" onclick="event.stopPropagation();removeInboxVideo('${esc(f.文件)}')">${ic("x", 12)}</button>
+                    ${f.时长秒 ? `<span class="sel-dur-tag">${esc(fmtClock(f.时长秒))}</span>` : ""}
+                  </div>
+                  <div class="sel-vid-info">
+                    <div class="sel-vid-name">${esc(f.文件)}</div>
+                    <div class="sel-vid-meta num">
+                      <span>${f.大小MB} MB</span>
+                      <span>${f.分辨率 ? esc(f.分辨率.split("×")[1] + "p") : (f.状态 === "整理中" ? "整理中" : "已就绪")}</span>
+                    </div>
+                  </div>
+                </div>
+              `).join("")}
+              <button class="sel-add-tile" onclick="triggerVideoPicker()" title="继续添加或按 ⌘V 粘贴视频">
+                ${ic("plus", 18)}
+                <span>继续添加</span>
+              </button>
+            </div>
+          </div>
+        ` : `
+          <div class="dock-main">
+            <div class="dock-upload-tile" onclick="triggerVideoPicker()" title="点击选择本地视频文件，或拖拽 / ⌘V 粘贴视频">
+              ${ic("plus", 22)}
+              <span>放录像</span>
+            </div>
+            <div class="dock-copy">
+              <div class="dock-title" id="dock-live-title">${esc(dockTitle)}</div>
+              <div class="dock-desc">${dockSummary}</div>
+            </div>
+          </div>
+        `}
+        <div class="dock-bar">
+          <div class="dock-chips">
+            <button class="dock-chip" onclick="openSettings()">${ic("spark", 13)} 驱动：${esc(S.配置.驱动AI || "Pi")}</button>
+            <button class="dock-chip" onclick="openSettings()">${ic("scissors", 13)} 剪辑：${esc(S.配置.剪辑工具 || "ffmpeg")}</button>
+            <span class="dock-chip static">9:16 竖屏 · ${esc((S.配置.成片时长 || [60, 90]).join("–"))}s</span>
+            <button class="dock-chip" onclick="pasteFromClipboard()" title="把访达里 ⌘C 复制的视频直接粘贴进来">⌘V 粘贴视频</button>
+          </div>
+          <div class="btns">
+            <button class="btn sm" onclick="openFolder('待加工')" title="超大原片可直接拖入访达文件夹">${ic("folder", 14)} 打开待加工目录</button>
+            ${busyNow
+              ? `<button class="btn pill-cta" disabled><span class="dot busy"></span> AI 处理中…</button>`
+              : canRunAi
+              ? `<button class="btn pill-cta pri" onclick="runAiNow()">${ic("play", 14)} 立即运行 AI 处理</button>`
+              : `<button class="btn pill-cta pri" onclick="triggerVideoPicker()">${ic("plus", 15)} 选择视频导入</button>`
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第二层：4 个人工拍板关卡视觉入口 (强层次感、一点即达) -->
+    <div class="studio-sec-hd">
+      <h3>你只需要拍板这 4 步</h3>
+      <span>其余整理、转写、初剪、写文案与生图均由 AI 自动完成</span>
+    </div>
+    <div class="studio-grid">
+      ${STUDIO_GATES.map(g => {
+        const cnt = active.filter(x => x.col === g.col && (x.state === "me" || x.state === "err")).length;
+        const selected = gateFilter === g.col;
+        return `<button class="studio-card ${g.color} ${cnt > 0 || selected ? "active-gate" : ""}" onclick="clickStudioGate('${g.col}')">
+          <div class="studio-art">${STUDIO_ART[g.col]}</div>
+          <div class="studio-info">
+            <div class="studio-top">
+              <span class="studio-name">${esc(g.title)}</span>
+              <span class="studio-badge ${cnt ? "" : "zero"}">${cnt ? `${cnt} 待办` : "0"}</span>
+            </div>
+            <div class="studio-sub">${esc(g.desc)}</div>
+          </div>
+        </button>`;
+      }).join("")}
+    </div>
+
+    <!-- 第三层：分类切换栏 + 搜索 + 极简图文任务列表 -->
+    <div class="feed-bar">
+      <div class="feed-tabs">
+        <button class="feed-tab ${feedTab === "todo" ? "on" : ""}" onclick="switchFeedTab('todo')">
+          待你拍板 <span class="cnt">${mine.length}</span>
+        </button>
+        <button class="feed-tab ${feedTab === "ai" ? "on" : ""}" onclick="switchFeedTab('ai')">
+          AI 处理队列 <span class="cnt">${aiQueue.length}</span>
+        </button>
+        <button class="feed-tab ${feedTab === "pub" ? "on" : ""}" onclick="switchFeedTab('pub')">
+          已完成与发布 <span class="cnt">${published.length}</span>
+        </button>
+        <button class="feed-tab ${feedTab === "overview" ? "on" : ""}" onclick="switchFeedTab('overview')">
+          全流程总览 <span class="cnt">${active.length}</span>
+        </button>
+        ${off.length ? `<button class="feed-tab ${feedTab === "off" ? "on" : ""}" onclick="switchFeedTab('off')">回收站 <span class="cnt">${off.length}</span></button>` : ""}
+      </div>
+      <div class="search-box">
+        <span class="s-ic">${ic("search", 14)}</span>
+        <input id="search-inp" type="text" placeholder="搜索视频标题…">
+      </div>
+    </div>
+
+    <div id="feed-body">${renderFeedContent()}</div>
+  `;
+}
+
+function renderFeedContent() {
+  const q = searchQ.trim().toLowerCase();
+  const match = x => !q || String(x.title || "").toLowerCase().includes(q) || String((x.k && x.k.开头钩子) || "").toLowerCase().includes(q);
+  const all = items().filter(match);
+  const active = all.filter(x => x.state !== "off");
+
+  if (feedTab === "overview") {
+    return `<div class="macro-board">
+      ${PHASES.map(ph => {
+        const list = active.filter(x => x.phase === ph.id);
+        return `<div class="phase-col">
+          <div class="phase-hd"><span>${esc(ph.name)}</span><span class="dim num">${list.length}</span></div>
+          ${list.length ? list.map(miniCard).join("") : `<div class="dim" style="text-align:center;padding:28px 0;font-size:12.5px">暂无内容</div>`}
+        </div>`;
+      }).join("")}
+    </div>`;
+  }
+
+  let list = [];
+  if (feedTab === "todo") {
+    list = active.filter(x => (x.state === "me" || x.state === "err") && (!gateFilter || x.col === gateFilter));
+  } else if (feedTab === "ai") {
+    list = active.filter(x => ["queue", "run", "wait"].includes(x.state));
+  } else if (feedTab === "pub") {
+    list = active.filter(x => x.state === "ok");
+  } else if (feedTab === "off") {
+    list = all.filter(x => x.state === "off");
+  }
+
+  if (!list.length) {
+    if (feedTab === "todo" && !items().filter(x => x.state !== "off").length) {
+      return `<div class="empty-box">
+        <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:6px">本地数据库当前为空，随时可以开始第一条视频</div>
+        <div style="margin-bottom:18px">点击上方「选择视频导入」（或将长视频拖入「待加工」文件夹），所有素材、切片、文案与数据都将直接保存在本机 <code>data/sop.db</code>。</div>
+        <div class="btns" style="justify-content:center">
+          <button class="btn pill-cta pri" onclick="triggerVideoPicker()">${ic("plus", 15)} 选择本地视频导入</button>
+          <button class="btn pill-cta" onclick="openFolder('待加工')">${ic("folder", 14)} 在访达打开「待加工」</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="empty-box">当前分类下没有匹配的任务${gateFilter ? ` · <a onclick="gateFilter='';render()">清除关卡筛选</a>` : ""}</div>`;
+  }
+
+  return `<div class="media-grid">${list.map(mediaCard).join("")}</div>`;
+}
+
+function mediaCard(x) {
+  const canPick = x.col === "pick" && x.state === "me" && x.type === "clip";
+  const isPicked = picked.has(x.id);
+  const pillCls = { me: "me", err: "err", run: "run", queue: "", ok: "ok", off: "" }[x.state] || "";
+  const gateDef = STUDIO_GATES.find(g => g.col === x.col);
+
+  let durText = "";
+  let thumbImg = null;
+  let isDirectThumbUrl = false;
+  if (x.type === "clip") {
+    const k = x.k;
+    durText = k.成片时长_秒 ? Math.round(k.成片时长_秒) + "s" : Math.round((k.预览.止 || 0) - (k.预览.起 || 0)) + "s";
+    const pubWithCover = (x.ps || []).find(p => p.封面竖文件);
+    const covPath = (pubWithCover && pubWithCover.封面竖文件) || (k.封面候选 && k.封面候选[0]) || null;
+    if (covPath) { thumbImg = file(covPath); }
+    else if (k.视频缩略图) { thumbImg = k.视频缩略图; isDirectThumbUrl = true; }
+  } else if (x.type === "file") {
+    durText = x.f.时长秒 ? fmtClock(x.f.时长秒) : x.f.大小MB + "M";
+    if (x.f.缩略图) { thumbImg = x.f.缩略图; isDirectThumbUrl = true; }
+  } else if (x.type === "source") {
+    durText = x.s.时长 || "";
+    if (x.s.缩略图) { thumbImg = x.s.缩略图; isDirectThumbUrl = true; }
+  }
+
+  let subLine = "";
+  if (x.state === "err") {
+    subLine = (x.k && x.k.原因) || (x.s && x.s.原因) || "执行暂停，点击查看原因并继续";
+  } else if (x.type === "clip") {
+    const k = x.k;
+    const pubDone = (x.ps || []).find(p => p.数据 && (p.数据["72h"] || p.数据["24h"]));
+    if (pubDone) {
+      const m = pubDone.数据["72h"] || pubDone.数据["24h"];
+      subLine = `播放 ${fmt(m.播放)} · 完播 ${fmt(m.完播率, 1)} · 点赞 ${fmt(m.点赞)}`;
+    } else if (k.重剪次数 > 0 && k.打回原因 && ["cut", "review"].includes(x.col)) {
+      subLine = `修改意见：${k.打回原因}`;
+    } else {
+      subLine = k.开头钩子 || k.概要 || "";
+    }
+  } else if (x.type === "file") {
+    subLine = "位于「待加工」目录，等待无损整理归档";
+  } else if (x.type === "source") {
+    subLine = x.s.摘要 || `${x.s.来源} · ${x.s.日期}`;
+  }
+
+  const ctaLabel = x.state === "err" ? "去处理" : (x.state === "me" && gateDef) ? gateDef.cta : "查看";
+
+  return `<div class="mcard ${x.state === "run" ? "running-card" : x.state === "me" ? "me" : x.state === "err" ? "err" : ""} ${flashId === x.id ? "flash" : ""}" onclick="openItem('${x.type}','${esc(x.id)}')">
+    <div class="mthumb">
+      ${thumbImg ? `<img src="${esc(thumbImg)}" alt="">` : ic(COLS[CI[x.col]] ? COLS[CI[x.col]][1] : "film", 22)}
+      ${durText ? `<span class="mthumb-dur">${esc(durText)}</span>` : ""}
+    </div>
+    <div class="mbody">
+      <div class="mtop">
+        <span class="pill ${pillCls}">${x.state === "run" ? '<span class="dot busy"></span>' : ""}${esc(x.label)}</span>
+        ${x.type === "clip" && x.k.重剪次数 > 0 && ["cut", "review"].includes(x.col) ? `<span class="pill re">第 ${x.k.重剪次数 + 1} 版</span>` : ""}
+      </div>
+      <div class="mtitle">${esc(x.title)}</div>
+      ${subLine ? `<div class="msub">${esc(subLine)}</div>` : ""}
+    </div>
+    <div class="mact">
+      ${canPick ? `<button class="chk-btn ${isPicked ? "on" : ""}" title="勾选批量操作" onclick="event.stopPropagation();togglePick('${esc(x.id)}',${!isPicked})">${isPicked ? ic("check", 13) : ""}</button>` : ""}
+      <button class="btn sm ${x.state === "me" ? "pri" : x.state === "err" ? "bad" : ""}">${esc(ctaLabel)}</button>
+    </div>
+  </div>`;
+}
+
+function miniCard(x) {
+  const pillCls = { me: "me", err: "err", run: "run", ok: "ok" }[x.state] || "";
+  return `<div class="mini-card ${x.state === "me" ? "me" : ""}" onclick="openItem('${x.type}','${esc(x.id)}')">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+      <span class="pill ${pillCls}">${esc(x.label)}</span>
+      ${x.type === "clip" && x.k.成片时长_秒 ? `<span class="dim num" style="font-size:11px">${Math.round(x.k.成片时长_秒)}s</span>` : ""}
+    </div>
+    <div class="mt">${esc(x.title)}</div>
+  </div>`;
+}
+
+function platBadge(p) {
+  const st = p.状态;
+  const c = st === "需人工" ? "err" : st === "已发布" || st === "已定时" ? "ok" : st === "待发布" ? "ai" : st === "草稿" ? "me" : "";
+  return `<span class="pf ${c}">${esc(p.平台)} · ${esc(st)}</span>`;
+}
+
+function errBlock(x, compact) {
+  const rows = [];
+  if (x.type === "source") rows.push({ kind: "source", o: x.s, name: "素材" });
+  if (x.type === "clip") {
+    if (x.k.状态 === "需人工") rows.push({ kind: "clip", o: x.k, name: "切片" });
+    for (const p of x.errP) rows.push({ kind: "pub", o: p, name: p.平台 });
+  }
+  return rows.map(r => {
+    const opts = resumeOpts(r.kind, r.o);
+    const id = r.o.source_id || r.o.publish_id || r.o.clip_id;
+    const why = r.o.原因 || "请查看处理日志";
+    const login = r.kind === "pub" && needLogin(r.o) ? `<button class="btn xs pri" onclick="event.stopPropagation();openPlat('${esc(r.o.平台)}','登录')">登录${esc(r.o.平台)}</button>` : "";
+    return `<div class="callout warn" style="margin:6px 0">${rows.length > 1 || r.kind === "pub" ? `<b>${esc(r.name)}：</b>` : ""}${esc(why)}</div><div class="btns">${login}${(compact ? opts.slice(0, 2) : opts).map((o, i) => resumeBtn(r.kind, id, o.to, o.t, i === 0 && !login ? "pri" : "")).join("")}</div>`;
+  }).join("");
+}
+
+function flash(id) { flashId = id; if (page === "board") render(); setTimeout(() => { flashId = null; }, 2400); }
+function togglePick(id, on) { on ? picked.add(id) : picked.delete(id); render(); }
+
+function renderBulk() {
+  const b = $("#bulk");
+  if (page !== "board" || !picked.size) { b.style.display = "none"; return; }
+  b.style.display = "flex";
+  b.innerHTML = `<span class="num" style="font-size:13px">已选 <b>${picked.size}</b> 条候选</span>
+    <button class="btn sm pri" onclick="bulk('待剪')">${ic("scissors", 14)} 确认剪辑</button>
+    <button class="btn sm" onclick="bulk('放弃')">不剪所选</button>
+    <button class="icon-ghost" onclick="picked.clear();render()">${ic("x", 15)}</button>`;
+}
+async function bulk(st) {
+  const ids = [...picked];
+  if (await act({ 动作: "挑片段", 状态: st, items: ids.map(id => ({ id })) }, st === "待剪" ? `已提交 ${ids.length} 条进入剪辑` : `已归档 ${ids.length} 条候选`)) {
+    picked.clear();
+    render();
+  }
+}
+
+/* ================= 设置面板 ================= */
+const GATE_INFO = {
+  挑选: { t: "挑片段", w: "AI 每场自动挑最多 3 条去剪，其余归档。" },
+  看片: { t: "看成片", w: "AI 自动核对成片时长、版式与字幕错字。" },
+  选封面: { t: "选封面", w: "AI 从三张竖版候选中自动选定一张并生成横版。" },
+  确认发布: { t: "确认发布", w: "AI 完成红线自检后直接授权排期定时发布（绝不立即发）。" }
+};
+
+function openSettings() {
+  openId = null;
+  openKind = "settings";
+  const a = S.自动处理 || {}, g = S.配置.AI代审 || {}, o = S.可选设置 || {};
+  const cur = { 驱动AI: S.配置.驱动AI, 剪辑工具: S.配置.剪辑工具 };
+
+  $("#drawer").innerHTML = `
+    <div class="dh">
+      <div>
+        <h2>系统与自动化设置</h2>
+        <div class="dim" style="margin-top:4px">配置后台自动巡检、执行 AI 引擎、剪辑工具与代审开关</div>
+      </div>
+      <button class="btn sm" onclick="closeDrawer()">关闭</button>
+    </div>
+
+    <div class="task-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+        <div>
+          <div style="font-weight:600;font-size:15px">后台自动巡检</div>
+          <div class="dim" style="margin-top:3px">${a.开启 ? `已开启 · 每 ${Math.round((a.间隔秒 || 300) / 60)} 分钟自动巡检并串联执行 AI 任务` : "已关闭 · 仅在你手动运行命令时启动 AI"}</div>
+        </div>
+        <button class="sw ${a.开启 ? "on" : ""}" onclick="toggleAuto(${!a.开启})"></button>
+      </div>
+    </div>
+
+    ${Object.entries(o).map(([k, opts]) => `
+      <div class="task-panel">
+        <div style="font-weight:600;font-size:15px">${k === "驱动AI" ? "驱动 AI 引擎" : "剪辑工具"}</div>
+        <div class="opt-grid">
+          ${opts.map(x => `
+            <button class="opt-card ${x.值 === cur[k] ? "on" : ""}" onclick="pickSetting('${k}','${esc(x.值)}',${!!x.已安装})">
+              <b><span>${esc(x.值)}</span><span class="pill ${x.已安装 ? "ok" : "bad"}">${x.已安装 ? "已安装" : "未装"}</span></b>
+              <div class="dim" style="font-size:12px;margin-top:4px">${esc(x.说明 || "标准接入")}</div>
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    `).join("")}
+
+    <div class="task-panel">
+      <div style="font-weight:600;font-size:15px">AI 代审开关（默认全关，由你把关）</div>
+      <div class="dim" style="margin:3px 0 12px">打开某一项后，该环节将跳过人工确认，由 AI 直接决定并记入日志。</div>
+      ${Object.entries(GATE_INFO).map(([k, v]) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 0;border-top:1px solid var(--border-subtle)">
+          <div>
+            <div style="font-weight:500">${esc(v.t)} ${g[k] ? '<span class="pill bad" style="margin-left:6px">AI 代审中</span>' : ""}</div>
+            <div class="dim" style="font-size:12px;margin-top:2px">${esc(v.w)}</div>
+          </div>
+          <button class="sw ${g[k] ? "on warn-sw" : ""}" onclick="toggleGate('${k}',${!g[k]})"></button>
+        </div>
+      `).join("")}
+    </div>`;
+  $("#drawer").classList.add("open");
+  $("#mask").style.display = "block";
+}
+
+function pickSetting(k, v, installed) {
+  if (v === S.配置[k]) return;
+  modal(`将${k}切换为「${v}」？`, installed ? "切换后将在下一轮任务生效。" : `注意：本机尚未检测到 ${esc(v)}，切换后需先安装。`, "确认切换", async () => {
+    await act({ 动作: "设置", 项: k, 值: v }, `已切换为 ${v}`);
+    if (openKind === "settings") openSettings();
+  });
+}
+
+function toggleAuto(on) {
+  if (on) modal("开启后台自动巡检？", "开启后系统会定时检查待办并自动运行整理、复盘、剪辑、封面和定时发布；挑片、看片、选封面和确认发布仍等你拍板。", "开启", async () => {
+    await act({ 动作: "自动处理", 开启: true }, "自动巡检已开启");
+    if (openKind === "settings") openSettings();
+  });
+  else modal("关闭后台自动巡检？", "关闭后 AI 不会自行在后台启动新任务。", "关闭", async () => {
+    await act({ 动作: "自动处理", 开启: false }, "自动巡检已关闭");
+    if (openKind === "settings") openSettings();
+  }, true);
+}
+
+function toggleGate(k, on) {
+  const v = GATE_INFO[k];
+  if (!on) { act({ 动作: "代审", 关卡: k, 开启: false }, "已恢复人工把关").then(() => { if (openKind === "settings") openSettings(); }); return; }
+  $("#mbox").innerHTML = `<h3 style="color:var(--accent-coral)">开启「AI 代审 · ${esc(v.t)}」？</h3>
+    <div class="dim" style="font-size:13.5px;line-height:1.75">${esc(v.w)}<br><br>开启后此步骤不再等待你确认，随时可关闭。</div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:14px;font-size:13px;cursor:pointer"><input type="checkbox" id="gack"> 我已知悉风险并授权 AI 代审</label>
+    <div class="btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn bad" id="mok" disabled>确认开启</button></div>`;
+  $("#modal").style.display = "flex";
+  $("#gack").onchange = e => ($("#mok").disabled = !e.target.checked);
+  $("#mok").onclick = async () => { closeModal(); await act({ 动作: "代审", 关卡: k, 开启: true }, `已开启 AI 代审`); if (openKind === "settings") openSettings(); };
+}
+
+/* ================= 二级页面: 原始录像 / 播放数据 / AI 口味 / 本地目录 ================= */
+function sources() {
+  if (!S.素材.length && !(S.收件 || []).length) {
+    return `<div class="page-head"><div><h2>原始录像</h2><p>放进「待加工」的长视频会自动转写逐字稿、生成课程复盘并拆出候选片段。</p></div></div>
+      <div class="empty-box"><p style="margin:0 0 16px">还没有导入任何长录像</p><button class="btn pill-cta pri" onclick="openFolder('待加工')">${ic("plus", 15)} 打开「待加工」放入录像</button></div>`;
+  }
+  return `<div class="page-head"><div><h2>原始录像</h2><p>查看每场录像的 AI 复盘报告与候选片段提取情况。</p></div>
+    <button class="btn pill-cta pri" onclick="openFolder('待加工')">${ic("plus", 15)} 放入新录像</button></div>` +
+    (S.收件 || []).map(f => `<div class="surface-card" style="display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer" onclick="openItem('file','file:${esc(f.文件)}')">
+      <div style="display:flex;align-items:center;gap:14px;min-width:0">
+        <div class="sel-vid-thumb" style="width:112px;height:64px">
+          ${f.缩略图 ? `<img src="${esc(f.缩略图)}" alt="">` : ""}
+          <span class="sel-play-btn" style="width:26px;height:26px">${ic("play", 12)}</span>
+        </div>
+        <div style="min-width:0">
+          <div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.文件)}</div>
+          <div class="dim num" style="margin-top:4px"><span class="pill ok">已就绪</span> · ${f.分辨率 ? esc(f.分辨率) + " · " : ""}${f.大小MB} MB${f.时长秒 ? " · 时长 " + esc(fmtClock(f.时长秒)) : ""}</div>
+        </div>
+      </div>
+      <div class="btns"><button class="btn sm" onclick="event.stopPropagation();openItem('file','file:${esc(f.文件)}')">试看</button><button class="btn sm pri" onclick="event.stopPropagation();runAiNow()">${ic("play", 13)} 开始处理</button></div>
+    </div>`).join("") +
+    S.素材.map(s => {
+      const ks = S.切片.filter(k => k.source_id === s.source_id);
+      const c = st => ks.filter(k => k.状态 === st).length;
+      return `<div class="surface-card">
+        <div class="btns" style="justify-content:space-between;align-items:flex-start">
+          <div>
+            <h3 style="margin:0;display:flex;align-items:center;gap:8px">${esc(s.标题 || s.source_id)} <span class="pill ${s.状态 === "已复盘" ? "ok" : ""}">${esc(s.状态)}</span></h3>
+            <div class="dim num" style="margin-top:5px">${esc(s.来源)} · ${esc(s.日期)}${s.时长 ? " · " + esc(s.时长) : ""} · 提取 ${ks.length} 条片段（待挑 ${c("候选")} / 已采用 ${ks.length - c("候选") - c("放弃")}）</div>
+          </div>
+          <div class="btns">
+            ${s.文件.文档.map(p => `<button class="btn sm" onclick="openDoc('${esc(p)}')">${ic("doc", 14)} 查看复盘</button>`).join("")}
+            ${s.文件.视频[0] ? `<button class="btn sm" onclick="reveal('${esc(s.文件.视频[0])}')">${ic("folder", 14)} 原片目录</button>` : ""}
+          </div>
+        </div>
+        ${s.摘要 ? `<p style="margin:12px 0 0;color:var(--text-secondary);max-width:74ch">${esc(s.摘要)}</p>` : ""}
+      </div>`;
+    }).join("");
+}
+
+function data() {
+  const tiers = ["24h", "72h", "7d"], plats = [...new Set(S.发布.map(p => p.平台))];
+  const vids = S.切片.map(k => ({ k, ps: pubsOf(k.clip_id).filter(p => !["草稿", "已废弃"].includes(p.状态) && (!dataPlat || p.平台 === dataPlat)) })).filter(v => v.ps.length);
+  return `<div class="page-head">
+      <div><h2>播放数据</h2><p>发布后自动采集 24h / 72h / 7d 播放、完播率与涨粉表现。</p></div>
+      <div class="btns">
+        <div class="seg">${tiers.map(t => `<button class="${t === dataTier ? "on" : ""}" onclick="dataTier='${t}';render()">${t}</button>`).join("")}</div>
+        ${plats.length > 1 ? `<div class="seg"><button class="${dataPlat ? "" : "on"}" onclick="dataPlat='';render()">全部</button>${plats.map(p => `<button class="${p === dataPlat ? "on" : ""}" onclick="dataPlat='${esc(p)}';render()">${esc(p)}</button>`).join("")}</div>` : ""}
+      </div>
+    </div>
+    ${vids.length ? vids.map(v => `<div class="surface-card">
+      <div class="btns" style="justify-content:space-between;margin-bottom:10px"><h3 style="margin:0;cursor:pointer" onclick="openItem('clip','${esc(v.k.clip_id)}')">${esc(v.k.标题)}</h3></div>
+      ${platTable(v.ps, dataTier)}
+    </div>`).join("") : '<div class="empty-box" style="margin-bottom:16px">还没有已排期或已发布的作品</div>'}
+    <div class="surface-card">
+      <h3>哪种选题与标题更容易爆（≥72h 样本）</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px">
+        ${Object.entries(S.分组).map(([dim, rs]) => `<div>
+          <div style="font-weight:600;margin-bottom:8px">${esc(dim)}</div>
+          ${rs.length ? `<table><tr><th>类型</th><th>条数</th><th>均播</th><th>完播</th></tr>${rs.map(r => `<tr class="num"><td>${esc(r.分组)}</td><td>${r.条数}</td><td>${fmt(r.平均播放)}</td><td>${fmt(r.平均完播率, 1)}</td></tr>`).join("")}</table>` : '<div class="dim">暂无</div>'}
+        </div>`).join("")}
+      </div>
+    </div>`;
+}
+
+function platTable(ps, tier) {
+  return `<table><tr><th>平台</th><th>发布状态</th><th>作品链接</th><th>核心指标 (${tier})</th></tr>${ps.map(p => {
+    const m = (p.数据 || {})[tier] || null;
+    const link = p.作品链接 ? `<a href="${esc(p.作品链接)}" target="_blank">打开作品 ${ic("ext", 12)}</a>` : `<a onclick="openPlat('${esc(p.平台)}','后台')">去创作者后台 ${ic("ext", 12)}</a>`;
+    return `<tr>
+      <td><b>${esc(p.平台)}</b></td>
+      <td><span class="pill ${p.状态 === "已发布" || p.状态 === "已定时" ? "ok" : ""}">${esc(p.状态)}${p.发布时间 ? " · " + hm(p.发布时间) : ""}</span></td>
+      <td>${link}</td>
+      <td class="num">${m ? `播放 <b>${fmt(m.播放)}</b> · 完播 <b>${fmt(m.完播率, 1)}</b> · 点赞 ${fmt(m.点赞)} · 涨粉 +${fmt(m.涨粉)}` : '<span class="dim">等待到点采集</span>'}</td>
+    </tr>`;
+  }).join("")}</table>`;
+}
+
+function prefs() {
+  const P = S.偏好 || {}, g = P.关卡 || {};
+  const rate = (a, b) => (b ? Math.round((a * 100) / b) + "%" : "–");
+  const gates = ["挑选", "看片", "选封面", "确认发布"];
+  return `<div class="page-head"><div><h2>AI 口味记忆</h2><p>记录你每次挑片、打回与选封面的偏好，让 AI 越剪越贴合你的审美。</p></div>
+    <div class="btns">${P.偏好文件 ? `<button class="btn sm" onclick="openDoc('${esc(P.偏好文件)}')">${ic("doc", 14)} 查看偏好档案</button>` : ""}${(P.提案 || []).map(p => `<button class="btn sm" onclick="openDoc('${esc(p)}')">${ic("doc", 14)} 标准优化提案</button>`).join("")}</div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:16px">
+      ${gates.map(gt => {
+        const x = g[gt] || { 次数: 0, 采纳: 0, 否定: 0 };
+        return `<div class="surface-card" style="margin:0">
+          <h3>${gt}</h3>
+          <div class="dim num">${x.次数} 次拍板 · 通过 ${x.采纳} · 淘汰 ${x.否定}</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:12px"><div class="bar" style="flex:1"><i style="width:${x.次数 ? (x.采纳 * 100) / x.次数 : 0}%"></i></div><b class="num">${rate(x.采纳, x.次数)}</b></div>
+        </div>`;
+      }).join("")}
+    </div>
+    <div class="surface-card">
+      <h3>最近拍板记录</h3>
+      ${(P.最近 || []).length ? `<table><tr><th>时间</th><th>步骤</th><th>结果</th><th>你的备注</th></tr>${P.最近.map(d => `<tr>
+        <td class="num">${esc(hm(d.时间))}</td>
+        <td>${esc(d.关卡)}</td>
+        <td>${d.采纳 ? `<span class="pill ok">通过</span>` : `<span class="pill bad">淘汰</span>`}</td>
+        <td>${d.标签 ? `<span class="dim">【${esc(d.标签)}】</span> ` : ""}${esc(d.备注 || "–")}</td>
+      </tr>`).join("")}</table>` : '<div class="dim">暂无记录</div>'}
+    </div>`;
+}
+
+function folders() {
+  const icMap = { 待加工: "inbox", 成片: "film", 参考封面: "image", 参考视频: "play", 学习: "sliders" };
+  return `<div class="page-head"><div><h2>本地目录</h2><p>所有原片、剪好的竖屏成片和参考素材都保存在你电脑本地。</p></div></div>
+    <div class="asset-grid">
+      ${S.文件夹.map(f => `<div class="asset-card">
+        <div class="asset-ic">${ic(icMap[f.键] || "folder", 20)}</div>
+        <div class="asset-head"><b>${esc(f.名称)}</b><span class="asset-cnt">${f.数量}</span></div>
+        <div class="dim" style="flex:1">${esc(f.说明)}</div>
+        <button class="btn sm" style="width:100%" onclick="openFolder('${f.键}')">${ic("folder", 14)} 在访达中打开</button>
+      </div>`).join("")}
+    </div>`;
+}
+
+/* ================= 右侧操作抽屉 (聚焦唯一动作，折叠次要参数) ================= */
+function openItem(type, id) {
+  openKind = type;
+  openId = id;
+  renderDrawer();
+  $("#drawer").classList.add("open");
+  $("#mask").style.display = "block";
+}
+
+function closeDrawer() {
+  if (Object.values(dirty).some(Boolean) && !confirm("文案改动尚未保存，确定关闭？")) return;
+  dirty = {};
+  openId = null;
+  openKind = null;
+  $("#drawer").classList.remove("open");
+  $("#mask").style.display = "none";
+  $("#drawer").innerHTML = "";
+}
+
+async function openDoc(p) {
+  const t = await (await fetch(file(p))).text();
+  openId = null;
+  openKind = "doc";
+  $("#drawer").innerHTML = `<div class="dh"><h2>${esc(p.split("/").pop())}</h2><button class="btn sm" onclick="closeDrawer()">关闭</button></div><div class="md">${esc(t)}</div>`;
+  $("#drawer").classList.add("open");
+  $("#mask").style.display = "block";
+}
+
+function renderDrawer() {
+  if (openKind === "settings") return openSettings();
+  const x = items().find(i => i.id === openId && i.type === openKind) || (openKind === "source" ? null : items().find(i => i.id === openId));
+  if (!x) { closeDrawer(); return; }
+  if (x.type === "file") {
+    const f = x.f;
+    $("#drawer").innerHTML = `
+      <div class="dh">
+        <div style="flex:1">
+          <h2>${esc(f.文件)}</h2>
+          <div class="dim num" style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="pill ok">待加工原片</span>
+            ${f.分辨率 ? `<span>${esc(f.分辨率)}</span><span>·</span>` : ""}
+            <span>${f.大小MB} MB</span>
+            ${f.时长秒 ? `<span>·</span><span>时长 ${esc(fmtClock(f.时长秒))}</span>` : ""}
+          </div>
+        </div>
+        <button class="btn sm" onclick="reveal('${esc(f.路径 || "待加工/" + f.文件)}')">${ic("folder", 14)} 在访达定位</button>
+        <button class="btn sm" onclick="closeDrawer()">关闭</button>
+      </div>
+      <div class="task-panel me">
+        <div class="task-lead">原片预览</div>
+        <video controls autoplay preload="metadata" src="${file(f.路径 || "待加工/" + f.文件)}"></video>
+        <div class="btns" style="margin-top:16px;justify-content:space-between">
+          <button class="btn bad sm" onclick="closeDrawer();removeInboxVideo('${esc(f.文件)}')">移出待处理队列</button>
+          <button class="btn pill-cta pri" onclick="closeDrawer();runAiNow()">${ic("play", 14)} 立即运行 AI 拆条与转写</button>
+        </div>
+      </div>`;
+    return;
+  }
+  if (x.type === "source") {
+    const s = x.s;
+    const docs = (s.文件 && s.文件.文档) || [];
+    const vids = (s.文件 && s.文件.视频) || [];
+    const clipCount = S.切片.filter(k => k.source_id === s.source_id).length;
+    const isDone = s.状态 === "已复盘";
+    $("#drawer").innerHTML = `<div class="dh">
+        <div style="flex:1">
+          <h2>${esc(x.title)}</h2>
+          <div class="dim" style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="pill ${x.state}">${esc(x.label)}</span>
+            ${s.评分 ? `<span>${esc(s.评分)}</span>` : ""}
+            <span>${esc(s.来源)} · ${esc(s.日期)}</span>
+          </div>
+        </div>
+        ${vids[0] ? `<button class="btn sm" onclick="reveal('${esc(vids[0])}')">${ic("folder", 14)} 原片目录</button>` : ""}
+        <button class="btn sm" onclick="closeDrawer()">关闭</button>
+      </div>
+      ${x.state === "err"
+        ? `<div class="task-panel err">${errBlock(x, false)}</div>`
+        : isDone
+        ? `<div class="task-panel">
+            <div class="task-lead">${ic("check", 16)} 转写与复盘已完成${clipCount === 0 ? "（未拆出合格候选片段）" : `（已拆出 ${clipCount} 条候选）`}</div>
+            ${s.摘要 ? `<div class="callout" style="margin-top:10px;line-height:1.75">${esc(s.摘要)}</div>` : ""}
+            ${clipCount === 0 ? `<div class="dim" style="margin-top:10px;font-size:13px;line-height:1.7">AI 已完成语音转写并写完复盘报告，但按当前成片标准（${esc((S.配置.成片时长 || [60, 90]).join("–"))} 秒完整独立观点）判定本录像暂无合格候选，因此未硬凑进入「挑片段」。可点下方按钮查看完整复盘报告与不建议剪的原因。</div>` : ""}
+            <div class="btns" style="margin-top:14px">
+              ${docs.map(p => `<button class="btn sm pri" onclick="openDoc('${esc(p)}')">${ic("doc", 14)} 查看完整复盘报告</button>`).join("")}
+              <button class="btn sm" onclick="resume('source','${esc(s.source_id)}','已整理')">重新复盘选片</button>
+            </div>
+          </div>`
+        : `<div class="task-panel">
+            <div class="task-lead">AI 自动转写与选片</div>
+            <div class="dim">转写完成后会自动生成课程复盘，并挑出符合时长与观点标准的候选片段进入「挑片段」等你勾选。</div>
+            <div class="btns" style="margin-top:14px">
+              <button class="btn sm pri" onclick="closeDrawer();runAiNow('正在转写与复盘 ${esc(s.source_id)}…')">${ic("play", 13)} 立即运行 AI 处理</button>
+            </div>
+          </div>`}
+      ${vids[0] ? `<details style="margin-top:12px"><summary>试看原始录像</summary><video controls preload="metadata" style="margin-top:10px;max-height:360px" src="${file(vids[0])}"></video></details>` : ""}`;
+    return;
+  }
+
+  const { k, ps } = x;
+  const folder = k.本地文件夹 || k.成片;
+  $("#drawer").innerHTML = `
+    <div class="dh">
+      <div style="flex:1">
+        <h2>${esc(k.标题)}</h2>
+        <div class="dim num" style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="pill ${x.state}">${esc(x.label)}</span>
+          ${k.重剪次数 > 0 ? `<span class="pill re">第 ${k.重剪次数 + 1} 版</span>` : ""}
+          ${ps.map(platBadge).join("")}
+        </div>
+      </div>
+      ${folder ? `<button class="btn sm" onclick="reveal('${esc(folder)}')">${ic("folder", 14)} 文件夹</button>` : ""}
+      <button class="btn sm" onclick="closeDrawer()">关闭</button>
+    </div>
+    ${x.state === "err" ? `<div class="task-panel err"><div class="task-lead">${ic("alert", 16)} 需要你处理</div>${errBlock(x, false)}</div>` : ""}
+    ${nextBox(x)}
+    <details><summary>查看片段详情与选题理由</summary>
+      <div class="callout" style="margin-top:8px">
+        <div class="dim num">原片时间：${esc(k.起始)} – ${esc(k.结束)} · 类型：${esc(k.选题类型 || "–")} / ${esc(k.钩子类型 || "–")}</div>
+        ${k.开头钩子 ? `<div style="margin-top:8px"><b>开头钩子：</b>${esc(k.开头钩子)}</div>` : ""}
+        ${k.概要 ? `<div style="margin-top:6px"><b>概要：</b>${esc(k.概要)}</div>` : ""}
+        ${k.理由 ? `<div class="dim" style="margin-top:6px">入选理由：${esc(k.理由)}</div>` : ""}
+      </div>
+    </details>`;
+
+  const vid = $("#drawer video[data-s]");
+  if (vid) {
+    const s = +vid.dataset.s, e = +vid.dataset.e;
+    vid.addEventListener("loadedmetadata", () => (vid.currentTime = s));
+    vid.addEventListener("timeupdate", () => { if (e && vid.currentTime > e) vid.pause(); });
+  }
   bindDrop();
 }
-const TAGS={pickOff:["跑题","不好笑","太散","重复了","不想露脸","涉及他人","质量差"],review:["太长","钩子弱","节奏慢","字幕错","结尾突兀","画面问题","跑题"],
-  cover:["字太小","颜色不对","图形不贴题","太花","太素","不够醒目"]};
-function tagRow(key,list){const on=tagSel[key]||[];return `<div class="tags">${list.map(t=>`<span class="tag ${on.includes(t)?"on":""}" onclick="toggleTag('${key}','${t}')">${t}</span>`).join("")}</div>`}
-function toggleTag(key,t){const a=tagSel[key]=tagSel[key]||[];const i=a.indexOf(t);i<0?a.push(t):a.splice(i,1);
-  document.querySelectorAll(`.tags`).forEach(()=>{});renderDrawerKeep()}
-function renderDrawerKeep(){const keep={};document.querySelectorAll("#drawer textarea,#drawer input[type=text],#drawer input:not([type])").forEach(e=>{if(e.id)keep[e.id]=e.value});
-  const vt={};document.querySelectorAll("#drawer video").forEach((v,i)=>vt[i]=v.currentTime);
-  renderDrawer();for(const [id,v] of Object.entries(keep)){const e=document.getElementById(id);if(e)e.value=v}
-  document.querySelectorAll("#drawer video").forEach((v,i)=>{if(vt[i])v.addEventListener("loadedmetadata",()=>v.currentTime=vt[i],{once:true})})}
-const overlapBox=k=>(k.重叠||[]).length?`<div class="quote warn">⚠️ ${k.重叠.map(o=>`和 ${esc(o.片段)}《${esc(o.标题)}》(${esc(o.状态)})重叠 ${o.秒} 秒`).join("<br>")}<br><span class="dim">两条都发,内容可能重复。</span></div>`:"";
-function nextBox(x){const {k,ps}=x;const id=k.clip_id;
-  const ai=(t,more)=>`<div class="next ai"><div class="lead">🤖 ${esc(t)}</div><div class="dim">${esc(nextText(x))}</div>${more||""}</div>`;
-  if(x.state==="off")return `<div class="next ai"><div class="lead">🗃 ${esc(x.label)}</div><div class="btns">${k.状态==="放弃"?`<button class="btn sm" onclick="act({动作:'切片状态',id:'${id}',状态:'候选'},'已改回候选')">改回候选,重新挑</button>`:ps.filter(p=>p.状态==="已废弃").map(p=>`<button class="btn sm" onclick="act({动作:'发布状态',id:'${esc(p.publish_id)}',状态:'草稿'},'已改回草稿')">${esc(p.平台)} 改回草稿</button>`).join("")}</div></div>`;
-  if(gateOn(x.col))return ai(`AI 代审中:${GATE[x.col]}`);
-  switch(x.col){
-  case "pick":return `<div class="next"><div class="lead">要不要把这段剪成短视频?</div>
-    ${k.预览.文件?`<video controls preload="metadata" data-s="${k.预览.起||0}" data-e="${k.预览.止||0}" src="${file(k.预览.文件)}"></video><div class="dim">只播这一段(${esc(k.起始)}–${esc(k.结束)}),到结尾自动停。</div>`:'<div class="dim">找不到原片,没法预览。</div>'}
-    ${overlapBox(k)}
-    <label class="f">给 AI 的剪辑要求(可不填)</label><textarea id="req" placeholder="例如:开头从「店员还得帮我答」那句开始;不要提价格;剪到 60 秒左右">${esc(k.剪辑要求||"")}</textarea>
-    <div class="btns" style="margin-top:10px"><button class="btn pri" onclick="pickOne('${id}','待剪')">✂️ 剪这段</button></div>
-    <label class="f">不剪的话,原因是?(可选,帮 AI 学你的口味)</label>${tagRow("off-"+id,TAGS.pickOff)}
-    <div class="btns"><button class="btn" onclick="pickOne('${id}','放弃')">不剪</button>
-     ${S.切片.filter(c=>c.source_id===k.source_id&&c.状态==="候选").length>1?`<a class="dim" style="margin-left:auto" onclick="restOff('${esc(k.source_id)}')">这场挑完了,剩下的都不剪</a>`:""}</div></div>`;
-  case "cut":return ai(k.状态==="剪辑中"?"AI 剪辑中":k.重剪次数>0?`排队重剪第 ${k.重剪次数+1} 版`:"排队等 AI 剪",
-     (k.重剪次数>0&&k.打回原因?`<div class="quote">🔁 你上次的意见:${esc(k.打回原因)}</div>`:"")+(k.剪辑要求?`<div class="quote req">你的剪辑要求:${esc(k.剪辑要求)}</div>`:"")+overlapBox(k)+
-     `<div class="dim" style="margin-top:6px">剪成 ${esc((S.配置.成片时长||[60,90]).join("–"))} 秒竖屏(标题栏、金句卡、字幕)。做完会出现在「看成片」等你。</div>`);
-  case "review":return `<div class="next"><div class="lead">看一下成片,能发吗?${k.重剪次数>0?` <span class="pill re">第 ${k.重剪次数+1} 版</span>`:""}</div>
-    ${k.重剪次数>0&&k.打回原因?`<div class="quote">🔁 上一版你的意见:${esc(k.打回原因)}</div>`:""}${k.剪辑要求?`<div class="quote req">你的剪辑要求:${esc(k.剪辑要求)}</div>`:""}${overlapBox(k)}
-    ${k.成片?`<div class="v916"><video id="rv" controls preload="metadata" src="${file(k.成片)}"></video></div>`:'<div class="dim">找不到成片文件</div>'}
-    <div class="dim" style="margin-top:6px">AI 的说明:${esc(lastNote(k.备注))}</div>
-    <div class="btns" style="margin-top:12px"><button class="btn pri" onclick="review('${id}','通过')">✅ 通过</button></div>
-    <label class="f">不满意?点原因、写下哪里不对,AI 会重剪(已重剪 ${k.重剪次数||0} 次,满 ${S.配置.重剪上限||3} 次转人工)</label>
-    ${tagRow("rv-"+id,TAGS.review)}
-    <textarea id="why" placeholder="例如:00:23 字幕错字;开头应该直接从「答十几道题」那句开始"></textarea>
-    <div class="btns" style="margin-top:8px"><button class="btn sm" onclick="stamp()">⏱ 插入当前播放时间</button><button class="btn bad" onclick="review('${id}','打回')">打回重剪</button></div></div>`;
-  case "copy":{const plats=S.配置.发布平台||[];const have=ps.map(p=>p.平台);
-    return ai("AI 写标题文案中",`<div class="dim" style="margin-top:6px">按平台分别写:${plats.map(p=>have.includes(p)?`${esc(p)} ✅`:`${esc(p)} …`).join(" · ")}</div>`)}
-  case "cover":{const need=activePubs(ps).some(p=>p.状态==="草稿"&&p.封面竖文件&&!p.封面横文件);
-    const prog=k.封面进度||[];
-    return ai(need?"AI 按你选的竖版出横版":"AI 做 3 张封面候选",
-     (prog.length?`<div style="margin-top:8px">${prog.map(l=>`<div class="dim">• ${esc(l)}</div>`).join("")}</div>`:"")+
-     ((k.封面候选||[]).length&&!need?`<div class="dim" style="margin-top:8px">已经出来的:</div><div class="covers">${k.封面候选.map(c=>`<div class="cov small"><img src="${file(c)}"></div>`).join("")}</div>`:"")+
-     (k.封面要求?`<div class="quote req">你的要求:\n${esc(k.封面要求.replace(/^# .*\n+/,""))}</div>`:""))}
-  case "coverpick":{const pub=activePubs(ps).find(p=>p.状态==="草稿"&&!p.封面竖文件)||ps[0];
-    return `<div class="next"><div class="lead">选一张你喜欢的封面${k.封面重做?` <span class="pill re">第 ${k.封面重做+1} 轮</span>`:""}</div><div class="dim" style="margin-bottom:10px">点图片选中,再点「用这张」;所有平台共用这张,AI 会按它再出横版。都不喜欢就写要求或传一张参考图,点「重做」。</div>
-    <div class="covers">${k.封面候选.map(c=>`<div class="cov ${coverSel[id]===c?"sel":""}" onclick="coverSel['${id}']=this.dataset.c;renderDrawerKeep()" data-c="${esc(c)}"><img src="${file(c)}"><div class="dim">${esc(c.split("/").pop().replace(/\.\w+$/,"").replace(/^[a-z]_/,""))}</div></div>`).join("")}</div>
-    ${k.封面要求?`<details><summary>你之前写的要求</summary><div class="quote req">${esc(k.封面要求.replace(/^# .*\n+/,""))}</div></details>`:""}
-    <label class="f">备注(可选):选了一张时,出横版照这个微调;都不满意时,按这个重做</label>
-    ${tagRow("cv-"+id,TAGS.cover)}
-    <textarea id="cnote" placeholder="例如:字再大一点;图形换成手机;就这张但换成蓝色"></textarea>
-    <label class="f">参考图(可选):拖一张喜欢的封面或截图进来,AI 按它的风格做</label>
-    <div class="drop" id="drop" onclick="$('#reffile').click()">📎 拖图片到这里,或点这里选文件<input type="file" id="reffile" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="uploadRef('${id}',this.files[0])"></div>
-    <label style="display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--dim);margin-top:6px"><input type="checkbox" id="refglobal"> 也放进全局「参考/封面」,以后的封面都学这个风格</label>
-    ${(k.封面参考||[]).length?`<div class="covers" style="margin-top:8px">${k.封面参考.map(c=>`<div class="cov small"><img src="${file(c)}"><div class="dim">参考</div></div>`).join("")}</div>`:""}
-    <div class="btns" style="margin-top:14px"><button class="btn pri" ${coverSel[id]?"":"disabled"} onclick="pickCover('${id}','${esc(pub.publish_id)}')">用这张</button><button class="btn" onclick="redoCover('${id}')">都不满意,按我的要求重做</button></div></div>`}
-  case "auth":{const ready=activePubs(ps).filter(p=>p.状态==="草稿"&&p.封面竖文件&&p.封面横文件);const p0=ready[0]||ps[0];
-    ready.forEach(p=>{if(pubSel[p.publish_id]===undefined)pubSel[p.publish_id]=true});
-    return `<div class="next"><div class="lead">确认各平台的文案和封面,没问题就授权定时发布</div>
-    <label class="f">封面(各平台共用)</label><div class="covers">${p0.封面竖文件?`<div class="cov"><img src="${file(p0.封面竖文件)}"><div class="dim">竖版 3:4</div></div>`:""}${p0.封面横文件?`<div class="cov"><img src="${file(p0.封面横文件)}"><div class="dim">横版</div></div>`:""}</div>
-    ${ready.map(p=>`<div class="plat-sec"><h4><input type="checkbox" ${pubSel[p.publish_id]?"checked":""} onchange="pubSel['${esc(p.publish_id)}']=this.checked">${esc(p.平台)}<span class="dim" style="font-weight:400;font-size:12px">勾上 = 发这个平台</span></h4>${copyForm(p)}</div>`).join("")}
-    ${k.成片?`<details><summary>再看一眼成片</summary><div class="v916" style="margin-top:8px"><video controls preload="none" src="${file(k.成片)}"></video></div></details>`:""}
-    <div class="btns" style="margin-top:14px"><button class="btn pri" onclick="authorize('${id}')">🚀 确认发布勾选的平台(定时)</button><button class="btn bad" onclick="discard('${id}')">这条都不发了</button></div></div>`}
-  case "pub":case "data":{const sched=activePubs(ps).filter(p=>p.状态==="已定时").map(p=>p.发布时间).sort();
-    const queued=activePubs(ps).filter(p=>p.状态==="待发布");
-    return `<div class="next ai"><div class="lead">${x.col==="data"?"✅ 已发布,AI 定时看数据":queued.length?"⏳ 已授权,AI 在平台上设定时":"⏰ 已定时,"+hm(sched[0])+" 自动发布"}</div>
-     <div class="dim" style="margin-bottom:8px">${esc(nextText(x))}</div>
-     <div class="btns" style="margin-bottom:8px"><div class="seg">${["24h","72h","7d"].map(t=>`<button class="${t===dataTier?"on":""}" onclick="dataTier='${t}';renderDrawerKeep()">${t}</button>`).join("")}</div></div>
-     ${platTable(ps.filter(p=>p.状态!=="草稿"),dataTier)}
-     ${queued.length?`<div class="btns" style="margin-top:10px">${queued.map(p=>`<button class="btn sm" onclick="act({动作:'发布状态',id:'${esc(p.publish_id)}',状态:'草稿'},'已撤回授权')">撤回 ${esc(p.平台)} 的授权</button>`).join("")}</div>`:""}</div>`}
-  default:return `<div class="next ai"><div class="lead">${esc(x.label)}</div></div>`}}
-const lastNote=n=>{const ls=(n||"").split("\n").filter(l=>l.trim());return ls.length?ls[ls.length-1]:"(没有说明)"};
-function copyForm(p){const id=p.publish_id;const titles=p.候选标题列表.map(t=>String(t).split("|"));
-  return `<label class="f">标题 <span id="dirty-${esc(id)}" style="color:var(--gold);display:${dirty[id]?"inline":"none"}">· 未保存</span></label>
-   <input id="t-${esc(id)}" value="${esc(p.标题)}" oninput="markDirty('${esc(id)}')">
-   ${titles.length?`<div style="margin-top:6px">${titles.map(([n,f,t])=>`<div class="cand"><span class="pill ${n===p.推荐?"me":""}">${n===p.推荐?"推荐":esc(f)}</span><span class="txt">${esc(t)}</span><button class="btn sm" onclick="document.getElementById('t-${esc(id)}').value=this.dataset.t;markDirty('${esc(id)}')" data-t="${esc(t)}">用这个</button></div>`).join("")}</div>`:""}
-   <label class="f">简介</label><textarea id="d-${esc(id)}" oninput="markDirty('${esc(id)}')">${esc(p.简介)}</textarea>
-   <label class="f">话题</label><input id="g-${esc(id)}" value="${esc(p.标签)}" oninput="markDirty('${esc(id)}')">
-   <div class="btns" style="margin-top:8px"><button class="btn sm" id="save-${esc(id)}" ${dirty[id]?"":"disabled"} onclick="saveCopy('${esc(id)}')">保存修改</button></div>`}
-function markDirty(id){dirty[id]=true;document.getElementById("dirty-"+id).style.display="inline";document.getElementById("save-"+id).disabled=false}
-async function saveCopy(id){const g=x=>document.getElementById(x+"-"+id).value;const f={标题:g("t"),简介:g("d"),标签:g("g")};dirty[id]=false;if(!await act({动作:"改文案",id,字段:f},"文案已保存",true)){dirty[id]=true}await load()}
-function stamp(){const v=$("#rv"),t=$("#why");if(!v)return;const s=Math.floor(v.currentTime);t.value+=(t.value?"\n":"")+String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")+" ";t.focus()}
 
-/* 关卡动作:做完自动切到同一列的下一条;没有了就关抽屉,在看板上高亮它的新位置 */
-async function afterGate(id,col,msg){await load();const nx=items().find(i=>i.col===col&&i.state==="me"&&i.id!==id);
-  if(nx){toast("✅ "+msg+"\n已切到下一条:"+nx.title);openId=nx.id;openKind=nx.type;renderDrawer()}
-  else{dirty={};closeDrawer();if(page!=="board")go("board");flash(id);toast("✅ "+msg)}}
-async function pickOne(id,st){const req=($("#req")||{}).value||"";const tags=st==="放弃"?(tagSel["off-"+id]||[]):[];
-  const j=await post({动作:"挑片段",状态:st,items:[{id,剪辑要求:st==="待剪"?req:""}],标签:tags});
-  if(!j.成功){toast("❌ "+(j.输出||j.错误||"失败"),false);return}
-  afterGate(id,"pick",st==="待剪"?"已交给 AI 剪"+(req.trim()?",带上了你的要求":""):"已标记不剪")}
-async function review(id,res){const r=($("#why")||{}).value.trim();const tags=tagSel["rv-"+id]||[];
-  if(res==="打回"&&!r&&!tags.length){toast("打回要点个原因或写清楚哪里不对",false);$("#why").focus();return}
-  const j=await post({动作:"看片",id,结论:res,原因:r,标签:tags});if(!j.成功){toast("❌ "+(j.输出||j.错误||"失败"),false);return}
-  afterGate(id,"review",res==="通过"?"通过了,AI 接着写文案、做封面":"已送回剪辑,AI 会按你的意见出下一版")}
-async function pickCover(id,pid){const note=($("#cnote")||{}).value||"";
-  const j=await post({动作:"选封面",id:pid,文件:coverSel[id],备注:note,标签:tagSel["cv-"+id]||[]});if(!j.成功){toast("❌ "+(j.输出||j.错误||"失败"),false);return}
-  afterGate(id,"coverpick","已选好,AI 会出横版"+(note.trim()?"并照你的备注微调":""))}
-async function redoCover(id){const note=($("#cnote")||{}).value||"";const tags=tagSel["cv-"+id]||[];
-  const k=S.切片.find(c=>c.clip_id===id);if(!note.trim()&&!tags.length&&!(k.封面参考||[]).length){toast("写一下想怎么改、点个原因,或先传一张参考图",false);return}
-  const j=await post({动作:"封面重做",id,备注:[tags.length?"【"+tags.join("、")+"】":"",note].join(""),标签:tags});if(!j.成功){toast("❌ "+(j.输出||j.错误||"失败"),false);return}
-  afterGate(id,"coverpick",j.输出||"已送回 AI 重做")}
-function uploadRef(id,f){if(!f)return;if(f.size>10e6){toast("图片不能超过 10 MB",false);return}
-  const rd=new FileReader();rd.onload=async()=>{await act({动作:"上传参考",id,文件名:f.name,数据:rd.result,全局:!!($("#refglobal")||{}).checked});renderDrawerKeep()};rd.readAsDataURL(f)}
-function bindDrop(){const d=$("#drop");if(!d)return;const id=openId;
-  d.ondragover=e=>{e.preventDefault();d.classList.add("over")};d.ondragleave=()=>d.classList.remove("over");
-  d.ondrop=e=>{e.preventDefault();d.classList.remove("over");const f=e.dataTransfer.files[0];if(f)uploadRef(id,f)}}
-function authorize(id){const k=S.切片.find(c=>c.clip_id===id);const ready=activePubs(pubsOf(id)).filter(p=>p.状态==="草稿"&&p.封面竖文件&&p.封面横文件);
-  const sel=ready.filter(p=>pubSel[p.publish_id]);if(!sel.length){toast("至少勾一个平台",false);return}
-  if(sel.some(p=>dirty[p.publish_id])){toast("有平台的文案改了还没保存,先点「保存修改」",false);return}
-  modal("确认发布这条视频?",`${sel.map(p=>`<b style="color:var(--text)">${esc(p.平台)}</b>:${esc(p.标题)}`).join("<br>")}${ready.length>sel.length?`<br><span class="dim">没勾的平台(${ready.filter(p=>!pubSel[p.publish_id]).map(p=>esc(p.平台)).join("、")})这次不发,还留在草稿。</span>`:""}<br><br>AI 会排到最近空着的发布时间(${esc(((S.配置.发布排期||{}).时间点||[]).join("、"))}),在平台上设成<b style="color:var(--gold)">定时发布</b>,不会立即发出。定时前你还可以在这里撤回。`,"确认发布",async()=>{
-    let ok=true;for(const p of sel){const j=await post({动作:"发布状态",id:p.publish_id,状态:"待发布"});ok&=!!j.成功;if(!j.成功)toast("❌ "+p.平台+":"+(j.输出||j.错误),false)}
-    if(ok)afterGate(id,"auth",`已授权 ${sel.length} 个平台,AI 会去设定时发布`);else load()})}
-function discard(id){const ready=activePubs(pubsOf(id)).filter(p=>p.状态==="草稿");
-  modal("这条都不发了?","视频文件都会保留,以后想发可以在「不做了」里改回来。","不发了",async()=>{for(const p of ready)await post({动作:"发布状态",id:p.publish_id,状态:"已废弃"});afterGate(id,"auth","已标记不发")},true)}
-addEventListener("keydown",e=>{if(e.key==="Escape"){if($("#modal").style.display==="flex")closeModal();else if($("#drawer").classList.contains("open"))closeDrawer()}});
-addEventListener("hashchange",()=>{page=hashPage();render()});
-/* 只在你没在操作时悄悄刷新:抽屉/弹窗打开、勾选中、页面在后台时都不刷新 */
-setInterval(()=>{if(document.hidden||openId||$("#drawer").classList.contains("open")||picked.size||$("#modal").style.display==="flex")return;load()},20000);
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!openId)load()});
+const TAGS = {
+  pickOff: ["跑题", "干货弱", "太散", "重复了", "不想露脸"],
+  review: ["太长", "钩子弱", "节奏慢", "字幕错字", "结尾突兀"],
+  cover: ["字太小", "配色违和", "图形不贴题", "不够醒目"]
+};
+function tagRow(key, list) {
+  const on = tagSel[key] || [];
+  return `<div class="tags">${list.map(t => `<span class="tag ${on.includes(t) ? "on" : ""}" onclick="toggleTag('${key}','${t}')">${t}</span>`).join("")}</div>`;
+}
+function toggleTag(key, t) {
+  const a = (tagSel[key] = tagSel[key] || []);
+  const i = a.indexOf(t);
+  i < 0 ? a.push(t) : a.splice(i, 1);
+  renderDrawerKeep();
+}
+function renderDrawerKeep() {
+  const keep = {};
+  document.querySelectorAll("#drawer textarea,#drawer input[type=text]").forEach(e => { if (e.id) keep[e.id] = e.value; });
+  renderDrawer();
+  for (const [id, v] of Object.entries(keep)) { const e = document.getElementById(id); if (e) e.value = v; }
+}
+
+function nextBox(x) {
+  const { k, ps } = x, id = k.clip_id;
+  if (x.state === "off") {
+    return `<div class="task-panel"><div class="task-lead">已移入回收站</div><button class="btn sm" onclick="act({动作:'切片状态',id:'${id}',状态:'候选'},'已恢复')">恢复至挑片段</button></div>`;
+  }
+  switch (x.col) {
+    case "pick":
+      return `<div class="task-panel me">
+        <div class="task-lead">第一步 · 这段要剪成短视频吗？</div>
+        ${k.预览.文件 ? `<video controls preload="metadata" data-s="${k.预览.起 || 0}" data-e="${k.预览.止 || 0}" src="${file(k.预览.文件)}"></video>` : `<div class="callout">${esc(k.开头钩子 || k.概要 || "候选片段")}</div>`}
+        <label class="f">给 AI 的剪辑嘱咐（可不填）</label>
+        <textarea id="req" placeholder="例如：开头直接放最冲突那句；控制在 70 秒以内">${esc(k.剪辑要求 || "")}</textarea>
+        <div class="btns" style="margin-top:14px">
+          <button class="btn pri" onclick="pickOne('${id}','待剪')">${ic("scissors", 14)} 剪这段</button>
+          <button class="btn" onclick="pickOne('${id}','放弃')">不剪，跳过</button>
+        </div>
+        <details style="margin-top:14px"><summary>如果不剪，顺手标个原因（可选）</summary>${tagRow("off-" + id, TAGS.pickOff)}</details>
+      </div>`;
+    case "review":
+      return `<div class="task-panel me">
+        <div class="task-lead">第二步 · 看一下剪好的成片，能过吗？</div>
+        ${k.重剪次数 > 0 && k.打回原因 ? `<div class="callout re">上一版你的意见：${esc(k.打回原因)}</div>` : ""}
+        ${k.成片 ? `<div class="v916" style="margin:12px 0"><video id="rv" controls preload="metadata" src="${file(k.成片)}"></video></div>` : `<div class="callout">成片时长：${k.成片时长_秒 || 75} 秒（本地运行可在此直接播放竖屏成片）</div>`}
+        <div class="btns" style="margin-top:14px">
+          <button class="btn pri" onclick="review('${id}','通过')">${ic("check", 15)} 成片通过，下一步做封面</button>
+        </div>
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border-subtle)">
+          <label class="f" style="margin-top:0">不满意？勾选问题让 AI 重剪</label>
+          ${tagRow("rv-" + id, TAGS.review)}
+          <textarea id="why" placeholder="写下哪里要改，例如：00:18 停顿太久；字幕错字"></textarea>
+          <div class="btns" style="margin-top:10px"><button class="btn bad" onclick="review('${id}','打回')">打回重剪</button></div>
+        </div>
+      </div>`;
+    case "coverpick": {
+      const pub = activePubs(ps).find(p => p.状态 === "草稿" && !p.封面竖文件) || ps[0];
+      return `<div class="task-panel me">
+        <div class="task-lead">第三步 · 点选一张你最喜欢的封面</div>
+        <div class="dim">选中竖版后，AI 会自动帮你延展出配套横版封面。</div>
+        <div class="covers">
+          ${k.封面候选.map(c => `<div class="cov ${coverSel[id] === c ? "sel" : ""}" onclick="coverSel['${id}']=this.dataset.c;renderDrawerKeep()" data-c="${esc(c)}">
+            <img src="${file(c)}">
+            <div class="dim">${esc(c.split("/").pop().replace(/\.\w+$/, "").replace(/^[a-z]_/, ""))}</div>
+          </div>`).join("")}
+        </div>
+        <div class="btns" style="margin-top:16px">
+          <button class="btn pri" ${coverSel[id] ? "" : "disabled"} onclick="pickCover('${id}','${esc(pub.publish_id)}')">${ic("check", 14)} 就用这张封面</button>
+        </div>
+        <details style="margin-top:16px"><summary>三张都不满意？填写要求或传参考图重做</summary>
+          ${tagRow("cv-" + id, TAGS.cover)}
+          <textarea id="cnote" placeholder="例如：字再大一点；换成深蓝底色"></textarea>
+          <div class="drop" id="drop" onclick="$('#reffile').click()">${ic("upload", 15)} 点击或拖入参考封面图<input type="file" id="reffile" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="uploadRef('${id}',this.files[0])"></div>
+          <div class="btns" style="margin-top:10px"><button class="btn sm" onclick="redoCover('${id}')">按要求重新生成</button></div>
+        </details>
+      </div>`;
+    }
+    case "auth": {
+      const ready = activePubs(ps).filter(p => p.状态 === "草稿" && p.封面竖文件 && p.封面横文件);
+      const p0 = ready[0] || ps[0];
+      ready.forEach(p => { if (pubSel[p.publish_id] === undefined) pubSel[p.publish_id] = true; });
+      return `<div class="task-panel me">
+        <div class="task-lead">第四步 · 核对标题与封面，确认定时发布</div>
+        <div class="covers" style="grid-template-columns:repeat(auto-fill,minmax(150px,190px))">
+          ${p0.封面竖文件 ? `<div class="cov" style="cursor:default"><img src="${file(p0.封面竖文件)}"><div class="dim">竖版 3:4</div></div>` : ""}
+          ${p0.封面横文件 ? `<div class="cov" style="cursor:default"><img src="${file(p0.封面横文件)}" style="object-fit:contain"><div class="dim">横版 4:3</div></div>` : ""}
+        </div>
+        ${ready.map(p => `<div class="plat-sec">
+          <h4><input type="checkbox" ${pubSel[p.publish_id] ? "checked" : ""} onchange="pubSel['${esc(p.publish_id)}']=this.checked"> 发布到 ${esc(p.平台)}</h4>
+          ${copyForm(p)}
+        </div>`).join("")}
+        <div class="btns" style="margin-top:18px">
+          <button class="btn pri" onclick="authorize('${id}')">${ic("clock", 14)} 确认排期定时发布</button>
+          <button class="btn bad" onclick="discard('${id}')">不发这条</button>
+        </div>
+      </div>`;
+    }
+    case "pub":
+    case "data":
+      return `<div class="task-panel">
+        <div class="task-lead">${x.col === "data" ? "已发布上线" : "已设好平台定时发布"}</div>
+        ${platTable(ps.filter(p => p.状态 !== "草稿"), dataTier)}
+      </div>`;
+    default:
+      return `<div class="task-panel"><div class="task-lead">${esc(x.label)}</div><div class="dim">该环节由 AI 自动处理，完成后会推进到下一步。</div></div>`;
+  }
+}
+
+function copyForm(p) {
+  const id = p.publish_id;
+  const titles = p.候选标题列表.map(t => String(t).split("|"));
+  return `<label class="f">作品标题 <span id="dirty-${esc(id)}" style="color:#7dd3fc;display:${dirty[id] ? "inline" : "none"}">· 未保存</span></label>
+    <input type="text" id="t-${esc(id)}" value="${esc(p.标题)}" oninput="markDirty('${esc(id)}')">
+    ${titles.length ? `<div style="margin-top:8px">${titles.map(([n, f, t]) => `<div class="cand"><span class="pill ${n === p.推荐 ? "me" : ""}">${n === p.推荐 ? "推荐" : esc(f)}</span><span class="txt">${esc(t)}</span><button class="btn xs" onclick="document.getElementById('t-${esc(id)}').value=this.dataset.t;markDirty('${esc(id)}')" data-t="${esc(t)}">换这个</button></div>`).join("")}</div>` : ""}
+    <label class="f">简介</label>
+    <textarea id="d-${esc(id)}" oninput="markDirty('${esc(id)}')">${esc(p.简介)}</textarea>
+    <label class="f">话题标签</label>
+    <input type="text" id="g-${esc(id)}" value="${esc(p.标签)}" oninput="markDirty('${esc(id)}')">
+    <div class="btns" style="margin-top:8px"><button class="btn sm" id="save-${esc(id)}" ${dirty[id] ? "" : "disabled"} onclick="saveCopy('${esc(id)}')">保存文案改动</button></div>`;
+}
+
+function markDirty(id) { dirty[id] = true; document.getElementById("dirty-" + id).style.display = "inline"; document.getElementById("save-" + id).disabled = false; }
+async function saveCopy(id) {
+  const g = x => document.getElementById(x + "-" + id).value;
+  dirty[id] = false;
+  if (!(await act({ 动作: "改文案", id, 字段: { 标题: g("t"), 简介: g("d"), 标签: g("g") } }, "文案已保存", true))) dirty[id] = true;
+  await load();
+}
+
+async function afterGate(id, col, msg) {
+  await load();
+  const nx = items().find(i => i.col === col && i.state === "me" && i.id !== id);
+  if (nx) { toast(msg + " · 自动打开下一条"); openId = nx.id; openKind = nx.type; renderDrawer(); }
+  else { dirty = {}; closeDrawer(); flash(id); toast(msg); }
+}
+
+async function pickOne(id, st) {
+  const req = ($("#req") || {}).value || "";
+  const tags = st === "放弃" ? (tagSel["off-" + id] || []) : [];
+  const j = await post({ 动作: "挑片段", 状态: st, items: [{ id, 剪辑要求: st === "待剪" ? req : "" }], 标签: tags });
+  if (!j.成功) { toast(j.输出 || j.错误 || "操作未生效", false); return; }
+  afterGate(id, "pick", st === "待剪" ? "已加入剪辑队列" : "已跳过该片段");
+}
+
+async function review(id, res) {
+  const r = (($("#why") || {}).value || "").trim();
+  const tags = tagSel["rv-" + id] || [];
+  if (res === "打回" && !r && !tags.length) { toast("请勾选问题标签或写一句修改原因", false); $("#why").focus(); return; }
+  const j = await post({ 动作: "看片", id, 结论: res, 原因: r, 标签: tags });
+  if (!j.成功) { toast(j.输出 || j.错误 || "操作未生效", false); return; }
+  afterGate(id, "review", res === "通过" ? "成片已通过" : "已打回重剪");
+}
+
+async function pickCover(id, pid) {
+  const note = ($("#cnote") || {}).value || "";
+  const j = await post({ 动作: "选封面", id: pid, 文件: coverSel[id], 备注: note, 标签: tagSel["cv-" + id] || [] });
+  if (!j.成功) { toast(j.输出 || j.错误 || "操作未生效", false); return; }
+  afterGate(id, "coverpick", "封面已选好，AI 将自动补齐横版");
+}
+
+async function redoCover(id) {
+  const note = ($("#cnote") || {}).value || "";
+  const tags = tagSel["cv-" + id] || [];
+  const k = S.切片.find(c => c.clip_id === id);
+  if (!note.trim() && !tags.length && !(k.封面参考 || []).length) { toast("请写明修改方向或上传参考图", false); return; }
+  const j = await post({ 动作: "封面重做", id, 备注: [tags.length ? "【" + tags.join("、") + "】" : "", note].join(""), 标签: tags });
+  if (!j.成功) { toast(j.输出 || j.错误 || "操作未生效", false); return; }
+  afterGate(id, "coverpick", "已发回重新生图");
+}
+
+function uploadRef(id, f) {
+  if (!f) return;
+  if (f.size > 10e6) { toast("图片不能超过 10 MB", false); return; }
+  const rd = new FileReader();
+  rd.onload = async () => { await act({ 动作: "上传参考", id, 文件名: f.name, 数据: rd.result, 全局: false }); renderDrawerKeep(); };
+  rd.readAsDataURL(f);
+}
+
+function bindDrop() {
+  const d = $("#drop");
+  if (!d) return;
+  const id = openId;
+  d.ondragover = e => { e.preventDefault(); d.classList.add("over"); };
+  d.ondragleave = () => d.classList.remove("over");
+  d.ondrop = e => { e.preventDefault(); d.classList.remove("over"); const f = e.dataTransfer.files[0]; if (f) uploadRef(id, f); };
+}
+
+function authorize(id) {
+  const ready = activePubs(pubsOf(id)).filter(p => p.状态 === "草稿" && p.封面竖文件 && p.封面横文件);
+  const sel = ready.filter(p => pubSel[p.publish_id]);
+  if (!sel.length) { toast("请至少勾选一个平台", false); return; }
+  if (sel.some(p => dirty[p.publish_id])) { toast("请先点击「保存文案改动」", false); return; }
+  modal("确认排期定时发布？", `${sel.map(p => `<b style="color:#fff">${esc(p.平台)}</b>：${esc(p.标题)}`).join("<br>")}<br><br>系统会自动排入最近空档（${esc(((S.配置.发布排期 || {}).时间点 || []).join(" / "))}）并设为<b style="color:#7dd3fc">定时发布</b>，绝不会立即发出。`, "确认定时发布", async () => {
+    let ok = true;
+    for (const p of sel) {
+      const j = await post({ 动作: "发布状态", id: p.publish_id, 状态: "待发布" });
+      ok &= !!j.成功;
+      if (!j.成功) toast(p.平台 + "：" + (j.输出 || j.错误), false);
+    }
+    if (ok) afterGate(id, "auth", "已加入定时发布队列");
+    else load();
+  });
+}
+
+function discard(id) {
+  const ready = activePubs(pubsOf(id)).filter(p => p.状态 === "草稿");
+  modal("确定不发这条视频？", "本地成片文件仍会保留，随时可在回收站恢复。", "确认不发", async () => {
+    for (const p of ready) await post({ 动作: "发布状态", id: p.publish_id, 状态: "已废弃" });
+    afterGate(id, "auth", "已移入回收站");
+  }, true);
+}
+
+/* ================= 实时轮询、计时器与 ⌘V 粘贴视频 ================= */
+let pollTimer = null;
+async function pollLive() {
+  try { L = await (await fetch("/api/live")).json(); } catch (e) { L = { 错误: 1 }; }
+  if (L && L.在干活) aiStarting = null;
+  else if (aiStarting && Date.now() - aiStarting.startedAt > 12000) aiStarting = null;
+  renderLiveSide();
+  const sig = JSON.stringify([L && L.在干活, L && L.环节, L && L.对象, L && L.实时进度, L && L.下一步 && L.下一步.环节]);
+  const idle = !openId && !$("#drawer").classList.contains("open") && !picked.size && $("#modal").style.display !== "flex" && !searchQ;
+  if (S && wasBusy !== null && wasBusy !== !!(L && L.在干活) && idle) {
+    await load();
+  } else if (S && sig !== liveSig && page === "board" && idle) {
+    render();
+  } else if (L && L.在干活) {
+    const ln = $("#ai-live-line");
+    if (ln && L.实时进度) ln.textContent = L.实时进度;
+  }
+  liveSig = sig;
+  wasBusy = !!(L && L.在干活);
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(pollLive, (L && L.在干活) || aiStarting ? 1500 : 3500);
+}
+setTimeout(pollLive, 250);
+
+// 实时每秒刷新已运行计时器
+setInterval(() => {
+  const el = $("#ai-elapsed");
+  if (!el) return;
+  const startMs = (L && L.在干活 && L.开始) ? new Date(L.开始).getTime() : (aiStarting ? aiStarting.startedAt : 0);
+  if (startMs) {
+    const sec = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+    el.textContent = "已运行 " + (fmtClock(sec) || "00:00");
+  }
+}, 1000);
+
+// 全局 ⌘V 粘贴视频支持（兼容浏览器剪贴板文件、本地路径文本、macOS 访达原生复制文件）
+addEventListener("paste", e => {
+  const tag = (e.target && e.target.tagName || "").toLowerCase();
+  const inText = (tag === "input" && !["checkbox", "file"].includes(e.target.type)) || tag === "textarea" || (e.target && e.target.isContentEditable);
+  const cd = e.clipboardData;
+  const files = cd ? Array.from(cd.files || []).filter(f => /\.(mp4|mov|mkv|m4v)$/i.test(f.name) || (f.type || "").startsWith("video/")) : [];
+  if (files.length) {
+    e.preventDefault();
+    uploadVideos(files);
+    return;
+  }
+  if (inText) return;
+  const txt = (cd && cd.getData("text") || "").trim();
+  if (txt && (/\.(mp4|mov|mkv|m4v)[\s"']*$/i.test(txt) || txt.startsWith("file://"))) {
+    e.preventDefault();
+    pasteFromClipboard(txt);
+    return;
+  }
+  // 在页面空白/操作舱处按 ⌘V 且未在文本输入框内时，直接尝试读取 macOS 访达复制的视频文件
+  if (!txt && page === "board" && !openId && $("#modal").style.display !== "flex") {
+    e.preventDefault();
+    pasteFromClipboard();
+  }
+});
+
+addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    if ($("#modal").style.display === "flex") closeModal();
+    else if ($("#drawer").classList.contains("open")) closeDrawer();
+  }
+});
+addEventListener("hashchange", () => { page = hashPage(); render(); });
+setInterval(() => {
+  if (document.hidden || openId || $("#drawer").classList.contains("open") || picked.size || $("#modal").style.display === "flex" || searchQ) return;
+  load();
+}, 20000);
 load();
 </script>
 </body>

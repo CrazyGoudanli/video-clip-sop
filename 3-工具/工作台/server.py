@@ -11,10 +11,12 @@
   - 工作台里点的按钮,一律记为 --by 人工,备注"工作台"。
 只用 Python 标准库。
 """
-import argparse, base64, json, mimetypes, os, re, shutil, sqlite3, subprocess, sys, threading, time, webbrowser
+import argparse, base64, hashlib, json, mimetypes, os, re, shutil, sqlite3, subprocess, sys, threading, time, webbrowser
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
-from urllib.parse import urlparse, parse_qs, unquote
+from urllib.parse import urlparse, parse_qs, unquote, quote
+
+os.environ["PATH"] = os.pathsep.join([str(Path.home() / ".local/bin"), "/opt/homebrew/bin", "/usr/local/bin", os.environ.get("PATH", "")])
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -156,8 +158,38 @@ def watch_state():
     return out
 
 
+_PROBE_CACHE = {}
+
+
+def _probe_video(p):
+    """快速读取视频时长与分辨率并做内存缓存,供工作台卡片显示封面与规格。"""
+    try:
+        st = p.stat()
+    except OSError:
+        return {"时长秒": 0, "分辨率": ""}
+    key = (str(p), st.st_size, int(st.st_mtime))
+    if key in _PROBE_CACHE:
+        return _PROBE_CACHE[key]
+    meta = {"时长秒": 0, "分辨率": ""}
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-show_entries", "stream=codec_type,width,height", "-of", "json", str(p)],
+            capture_output=True, text=True, timeout=8
+        )
+        if r.returncode == 0:
+            d = json.loads(r.stdout or "{}")
+            dur = float((d.get("format") or {}).get("duration") or 0)
+            v = next((s for s in (d.get("streams") or []) if s.get("codec_type") == "video"), {})
+            w, h = v.get("width"), v.get("height")
+            meta = {"时长秒": round(dur), "分辨率": f"{w}×{h}" if w and h else ""}
+    except Exception:
+        pass
+    _PROBE_CACHE[key] = meta
+    return meta
+
+
 def inbox_files():
-    """待加工根目录里还没整理的录像:录制/拷贝中、排队、整理中。"""
+    """待加工根目录里还没整理的录像:录制/拷贝中、排队、整理中,附带缩略图与视频规格。"""
     inbox = db.folder("待加工目录", "待加工")
     lock = ROOT / "data" / ".watch.lock"
     busy = []
@@ -174,8 +206,20 @@ def inbox_files():
             if f.is_file() and not f.name.startswith(".") and f.suffix.lower() in VIDEO_EXT:
                 st = f.stat()
                 age = time.time() - st.st_mtime
-                out.append({"文件": f.name, "大小MB": round(st.st_size / 1e6), "状态": "整理中" if f.name in busy else
-                            ("还在写入" if age < 600 else "排队"), "可开始秒": max(0, int(600 - age))})
+                rel_p = rel(str(f)) or f"待加工/{f.name}"
+                meta = _probe_video(f)
+                dur = meta["时长秒"]
+                at = round(min(3.0, max(0.5, dur * 0.08)), 1) if dur > 1 else 0
+                out.append({
+                    "文件": f.name,
+                    "路径": rel_p,
+                    "大小MB": round(st.st_size / 1e6, 1) if st.st_size < 10_000_000 else round(st.st_size / 1e6),
+                    "时长秒": dur,
+                    "分辨率": meta["分辨率"],
+                    "缩略图": f"/thumb?path={quote(rel_p)}&at={at}",
+                    "状态": "整理中" if f.name in busy else ("还在写入" if age < 600 else "排队"),
+                    "可开始秒": max(0, int(600 - age)),
+                })
     return out
 
 
@@ -187,6 +231,8 @@ def state():
     sources = rows(c, "select * from sources order by 日期 desc, source_id desc")
     for s in sources:
         s["文件"] = source_files(s["source_id"])
+        v0 = (s["文件"]["视频"] or [None])[0]
+        s["缩略图"] = f"/thumb?path={quote(v0)}&at=3" if v0 else None
         s["原因"] = last_line(s.get("备注"))
         s["之前"] = before_help(c, "source", s["source_id"]) if s["状态"] == "需人工" else None
         s["监测"] = ws.get(s["source_id"])
@@ -195,8 +241,15 @@ def state():
         files = source_files(k["source_id"])["视频"]
         want = re.search(r"来源文件[::]\s*([^\s;;,,]+)", k.get("理由") or "")
         src = next((f for f in files if want and want[1] in f), files[0] if files else None)
-        k["预览"] = {"文件": src, "起": secs(k["起始"]), "止": secs(k["结束"])}
+        s0 = secs(k["起始"])
+        k["预览"] = {"文件": src, "起": s0, "止": secs(k["结束"])}
         k["成片"] = rel(k.get("成片文件"))
+        if k["成片"]:
+            k["视频缩略图"] = f"/thumb?path={quote(k['成片'])}&at=2"
+        elif src:
+            k["视频缩略图"] = f"/thumb?path={quote(src)}&at={round((s0 or 0) + 2, 1)}"
+        else:
+            k["视频缩略图"] = None
         k["封面候选"] = cover_candidates(k.get("本地文件夹"))
         k["封面参考"] = cover_refs(k.get("本地文件夹"))
         k["封面要求"] = cover_notes(k.get("本地文件夹"))
@@ -336,17 +389,48 @@ def clear_cooldown(ids):
 _last_kick = [0.0]
 
 
-def kick():
-    """自动处理开着时,马上跑一次检查(不用等下一个 5 分钟)。已有任务在跑就什么也不做。"""
-    if not db.CFG.get("自动执行") or os.environ.get("SOP_NO_KICK") or time.time() - _last_kick[0] < 30:
-        return
-    if (ROOT / "data" / ".watch.lock").exists():
-        return
+def kick(manual=False):
+    """自动处理开着时(或用户在工作台点'立即运行'时),马上跑一次检查。已有任务在跑就什么也不做。"""
+    if not manual and (not db.CFG.get("自动执行") or os.environ.get("SOP_NO_KICK") or time.time() - _last_kick[0] < 30):
+        return False, "未满足自动触发条件"
+    lock = ROOT / "data" / ".watch.lock"
+    if lock.exists() and time.time() - lock.stat().st_mtime < 4 * 3600:
+        alive = True
+        try:
+            m = re.search(r"pid=(\d+)", lock.read_text(errors="ignore"))
+            if m:
+                os.kill(int(m.group(1)), 0)
+        except ProcessLookupError:
+            alive = False
+            lock.unlink(missing_ok=True)
+        except Exception:
+            pass
+        if alive:
+            return False, "当前已有 AI 任务正在运行中"
     _last_kick[0] = time.time()
     log = ROOT / "data" / "运行日志" / "autorun.log"
-    log.parent.mkdir(exist_ok=True)
-    subprocess.Popen([sys.executable, str(ROOT / "3-工具" / "watch.py"), "--once"], cwd=ROOT,
-                     stdout=open(log, "a"), stderr=subprocess.STDOUT, start_new_session=True)
+    log.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [sys.executable, str(ROOT / "3-工具" / "watch.py"), "--once"] + (["--manual"] if manual else [])
+    subprocess.Popen(cmd, cwd=ROOT, stdin=subprocess.DEVNULL, stdout=open(log, "a"), stderr=subprocess.STDOUT, start_new_session=True)
+    return True, "已启动本机 AI 执行下一步"
+
+
+def run_now():
+    """工作台点击'立即运行 AI':对刚放进待加工且未被程序占用的视频解除 10 分钟静默等待,并立刻拉起 watch.py --once --manual。"""
+    inbox = db.folder("待加工目录", "待加工")
+    lsof = shutil.which("lsof") or ("/usr/sbin/lsof" if os.path.exists("/usr/sbin/lsof") else None)
+    if inbox.is_dir():
+        for f in inbox.iterdir():
+            if f.is_file() and not f.name.startswith(".") and f.suffix.lower() in VIDEO_EXT:
+                if time.time() - f.stat().st_mtime < 600:
+                    in_use = False
+                    if lsof:
+                        r = subprocess.run([lsof, "--", str(f)], capture_output=True, text=True)
+                        in_use = (r.returncode == 0 and bool(r.stdout.strip()))
+                    if not in_use:
+                        t = time.time() - 605
+                        os.utime(f, (t, t))
+    return kick(manual=True)
 
 
 # ---------------- 写:只通过 db.py ----------------
@@ -354,6 +438,76 @@ CLIP_STATES = {"待剪", "放弃", "候选"}
 PUB_STATES = {"待发布", "已废弃", "草稿"}
 PUB_FIELDS = {"标题", "简介", "标签", "选用"}
 ID_RE = re.compile(r"^[^\s/\\]{3,80}$")
+
+
+def remove_inbox(a):
+    """把误拖入待加工的视频移到 待加工/已移出/(遵守绝不删除原始录像红线)。"""
+    name = Path(str(a.get("文件") or "")).name
+    inbox = db.folder("待加工目录", "待加工")
+    src = inbox / name
+    if not name or not src.is_file() or src.suffix.lower() not in VIDEO_EXT:
+        return False, "找不到该待加工视频"
+    out_dir = inbox / "已移出"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    dst = out_dir / f"{time.strftime('%m%d-%H%M%S')}_{name}"
+    os.rename(src, dst)
+    return True, f"已移出队列(原文件保留在 待加工/已移出/{dst.name})"
+
+
+def paste_clipboard_video(a):
+    """支持用户在访达 Command+C 复制视频文件后,在工作台直接 Command+V 秒级导入本地 待加工/ 目录。"""
+    raw = str(a.get("路径") or "").strip()
+    paths = []
+    if raw:
+        for line in raw.splitlines():
+            p = line.strip().strip('"').strip("'")
+            if p.startswith("file://"):
+                p = unquote(urlparse(p).path)
+            if p:
+                paths.append(Path(os.path.expanduser(p)))
+    else:
+        # 从 macOS 剪贴板读取访达复制的文件 URL(支持单文件或多文件)
+        script = (
+            'try\n'
+            '  set p to POSIX path of (the clipboard as «class furl»)\n'
+            '  return p\n'
+            'on error\n'
+            '  try\n'
+            '    return (the clipboard as text)\n'
+            '  on error\n'
+            '    return ""\n'
+            '  end try\n'
+            'end try'
+        )
+        r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=5)
+        for line in (r.stdout or "").splitlines():
+            p = line.strip().strip('"').strip("'")
+            if p.startswith("file://"):
+                p = unquote(urlparse(p).path)
+            if p:
+                paths.append(Path(os.path.expanduser(p)))
+    valid = [p for p in paths if p.is_file() and p.suffix.lower() in VIDEO_EXT]
+    if not valid:
+        return False, "剪贴板里没有检测到 mp4 / mov / mkv / m4v 视频文件（请先在访达里复制视频文件再按 ⌘V）"
+    inbox = db.folder("待加工目录", "待加工")
+    inbox.mkdir(parents=True, exist_ok=True)
+    added = []
+    for src in valid:
+        safe = re.sub(r"[^\w.\-\u4e00-\u9fff ]", "_", src.name).strip()
+        dest = inbox / safe
+        if dest.exists():
+            dest = inbox / f"{dest.stem}_{time.strftime('%H%M%S')}{dest.suffix}"
+        part = inbox / f".uploading_{dest.name}"
+        try:
+            shutil.copy2(src, part)
+            os.rename(part, dest)
+            t = time.time() - 605
+            os.utime(dest, (t, t))
+            added.append(dest.name)
+        except Exception as e:
+            part.unlink(missing_ok=True)
+            return False, f"导入 {src.name} 失败:{e}"
+    return True, f"已从剪贴板导入：{', '.join(added)}"
 
 
 def run_db(*args):
@@ -374,6 +528,12 @@ def action(a):
         return set_gate(a)
     if kind == "自动处理":
         return set_auto(bool(a.get("开启")))
+    if kind == "立即执行":
+        return run_now()
+    if kind == "移出待加工":
+        return remove_inbox(a)
+    if kind == "粘贴剪贴板视频":
+        return paste_clipboard_video(a)
     if kind == "批量切片状态":
         a = {**a, "动作": "挑片段", "items": [{"id": i} for i in (a.get("ids") or [])]}
         kind = "挑片段"
@@ -672,17 +832,14 @@ AUTORUN = ROOT / "3-工具" / "脚本" / "autorun.sh"
 
 
 def auto_status():
-    """自动处理开关的实际状态:配置里的 自动执行 + 定时检查任务是否在跑;以及 AI 此刻在不在干活。"""
-    r = subprocess.run(["zsh", str(AUTORUN), "status"], capture_output=True, text=True, timeout=20)
-    m = re.search(r"监测:\s*(\S+)\s*/\s*(\S+)", r.stdout)
-    running_task = m and m[2] == "在跑"
+    """自动处理开关的实际状态:由工作台内置巡检线程或系统定时任务驱动。"""
+    on = bool(db.CFG.get("自动执行"))
     lock = ROOT / "data" / ".watch.lock"
     busy = lock.read_text().split(" ")[0] if lock.exists() else ""
     logs = sorted((ROOT / "data" / "运行日志").glob("*.log"), key=lambda p: p.stat().st_mtime) if (ROOT / "data" / "运行日志").is_dir() else []
     last = [p for p in logs if p.name != "autorun.log"]
-    return {"开启": bool(db.CFG.get("自动执行")) and bool(running_task), "配置": bool(db.CFG.get("自动执行")),
-            "定时任务": bool(running_task), "间隔秒": db.CFG.get("监测间隔秒", 300), "正在做": busy,
-            "最近一次": last[-1].name if last else ""}
+    return {"开启": on, "配置": on, "定时任务": on, "间隔秒": db.CFG.get("监测间隔秒", 300),
+            "正在做": busy, "最近一次": last[-1].name if last else ""}
 
 
 STAGE_NAME = {"8-偏好复盘": "总结你的偏好", "0-整理": "整理录像", "1-复盘选片": "转写、复盘、挑片段", "2-剪辑": "剪辑成片", "4-文案": "写标题文案",
@@ -765,6 +922,16 @@ def live():
             if lf and lf.exists():
                 res["最近几步"] = _steps(lf)
                 res["日志"] = str(lf.relative_to(ROOT))
+                # 同时读取纯文本/进度条最后一行(如本机转写下载进度或 Pi 输出),让前端动画条展示实时状态
+                raw_tail = _tail_lines(lf, 12000)
+                prog = ""
+                for ln in reversed(raw_tail):
+                    clean = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", ln.split("\r")[-1]).strip()
+                    if clean and not clean.startswith("{") and len(clean) > 2:
+                        prog = clean[:140]
+                        break
+                if prog:
+                    res["实时进度"] = prog
     al = logdir / "autorun.log"
     if al.exists():
         rows = [l for l in _tail_lines(al, 20000) if l.startswith("[")]
@@ -812,15 +979,14 @@ def set_auto(on):
         return False, "还没有 配置.json,先让 AI 按启动问卷生成"
     cfg = json.loads(cfg_path.read_text())
     if on and not cfg.get("驱动命令"):
-        return False, "还没设置驱动 AI,先在左下角选一个"
-    r = subprocess.run(["zsh", str(AUTORUN), "install" if on else "uninstall"], capture_output=True, text=True, timeout=60)
-    if r.returncode != 0:
-        return False, (r.stdout + r.stderr).strip()[-400:]
+        return False, "还没设置驱动 AI,先在设置里选一个"
     cfg["自动执行"] = bool(on)
     cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=1) + "\n")
     db.CFG.clear()
     db.CFG.update(cfg)
-    return True, ("自动处理已开启:每 %s 秒检查一次,有活就让 AI 接着做" % cfg.get("监测间隔秒", 300)) if on else "自动处理已关闭"
+    if on:
+        kick()
+    return True, ("自动巡检已开启:每 %s 秒自动检查一次,有活就让 AI 接着做" % cfg.get("监测间隔秒", 300)) if on else "自动巡检已关闭"
 
 
 def set_gate(a):
@@ -915,6 +1081,8 @@ class H(BaseHTTPRequestHandler):
                 return self._send(200, state())
             if u.path == "/file":
                 return self._file(unquote(q.get("path", [""])[0]))
+            if u.path == "/thumb":
+                return self._thumb(unquote(q.get("path", [""])[0]), (q.get("at") or ["1"])[0])
         except SystemExit:
             return self._send(500, {"错误": "数据库不可用,先运行 python3 3-工具/db.py init"})
         except Exception as e:
@@ -927,7 +1095,10 @@ class H(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin")
         if origin and urlparse(origin).hostname not in ("127.0.0.1", "localhost"):
             return self._send(403, {"错误": "来源不允许"})
-        if self.path != "/api/action" or "json" not in (self.headers.get("Content-Type") or ""):
+        u = urlparse(self.path)
+        if u.path == "/api/upload":
+            return self._upload(parse_qs(u.query))
+        if u.path != "/api/action" or "json" not in (self.headers.get("Content-Type") or ""):
             return self._send(400, {"错误": "请求不合法"})
         n = int(self.headers.get("Content-Length") or 0)
         try:
@@ -938,6 +1109,79 @@ class H(BaseHTTPRequestHandler):
         except Exception as e:
             ok, out = False, str(e)
         self._send(200 if ok else 400, {"成功": ok, "输出": out})
+
+    def _upload(self, q):
+        """流式接收浏览器拖入/选中的视频文件,直接写入本地 待加工/ 目录,不占内存。"""
+        raw_name = unquote((q.get("name") or [""])[0]).strip()
+        safe = re.sub(r"[^\w.\-\u4e00-\u9fff ]", "_", Path(raw_name).name).strip()
+        if not safe or Path(safe).suffix.lower() not in VIDEO_EXT:
+            return self._send(400, {"成功": False, "输出": "只支持 mp4 / mov / mkv / m4v 视频文件"})
+        n = int(self.headers.get("Content-Length") or 0)
+        if n <= 0:
+            return self._send(400, {"成功": False, "输出": "视频文件为空"})
+        inbox = db.folder("待加工目录", "待加工")
+        inbox.mkdir(parents=True, exist_ok=True)
+        dest = inbox / safe
+        if dest.exists():
+            stem, suf = dest.stem, dest.suffix
+            dest = inbox / f"{stem}_{time.strftime('%H%M%S')}{suf}"
+        part = inbox / f".uploading_{dest.name}"
+        left = n
+        try:
+            with open(part, "wb") as fh:
+                while left > 0:
+                    chunk = self.rfile.read(min(1 << 20, left))
+                    if not chunk:
+                        break
+                    fh.write(chunk)
+                    left -= len(chunk)
+            if left > 0:
+                part.unlink(missing_ok=True)
+                return self._send(400, {"成功": False, "输出": "上传中断,未保存残缺文件"})
+            os.rename(part, dest)
+            t = time.time() - 605
+            os.utime(dest, (t, t))
+            return self._send(200, {"成功": True, "输出": f"已存入待加工/{dest.name}", "文件": dest.name})
+        except Exception as e:
+            part.unlink(missing_ok=True)
+            return self._send(500, {"成功": False, "输出": f"写入失败:{e}"})
+
+    def _thumb(self, p, at_str):
+        """用 ffmpeg 截取视频指定秒数的缩略帧并落盘缓存到 data/.thumbs/。"""
+        r = rel(p)
+        if not r:
+            return self._send(404, {"错误": "视频不存在"})
+        f = (ROOT / r).resolve()
+        if f.suffix.lower() not in VIDEO_EXT or not f.is_file():
+            return self._send(400, {"错误": "不是受支持的视频文件"})
+        try:
+            at = max(0.0, float(at_str or 0))
+        except ValueError:
+            at = 1.0
+        st = f.stat()
+        tdir = ROOT / "data" / ".thumbs"
+        tdir.mkdir(parents=True, exist_ok=True)
+        key = hashlib.sha1(f"{r}:{st.st_size}:{int(st.st_mtime)}:{at:.1f}".encode()).hexdigest()[:20]
+        jpg = tdir / f"{key}.jpg"
+        if not jpg.exists():
+            tmp = tdir / f".{key}.{os.getpid()}.jpg"
+            for seek in (at, 0.0):
+                cmd = ["ffmpeg", "-nostdin", "-v", "error", "-ss", f"{seek:.2f}", "-i", str(f),
+                       "-frames:v", "1", "-vf", "scale=480:-2", "-q:v", "3", "-y", str(tmp)]
+                subprocess.run(cmd, capture_output=True, timeout=15)
+                if tmp.exists() and tmp.stat().st_size > 0:
+                    os.replace(tmp, jpg)
+                    break
+            tmp.unlink(missing_ok=True)
+        if not jpg.exists():
+            return self._send(404, {"错误": "无法生成缩略图"})
+        data = jpg.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", "image/jpeg")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "public, max-age=86400")
+        self.end_headers()
+        self.wfile.write(data)
 
     def _file(self, p):
         r = rel(p)
@@ -987,6 +1231,19 @@ class H(BaseHTTPRequestHandler):
                 left -= len(chunk)
 
 
+def _patrol_loop():
+    """内置后台巡检线程(避免项目放在 ~/Desktop 时 macOS launchd 被 TCC 拦截)。"""
+    while True:
+        time.sleep(15)
+        try:
+            if db.CFG.get("自动执行"):
+                gap = max(30, int(db.CFG.get("监测间隔秒", 300)))
+                if time.time() - _last_kick[0] >= gap:
+                    kick()
+        except Exception:
+            pass
+
+
 def main():
     ap = argparse.ArgumentParser(description="视频剪辑 SOP 本地工作台")
     ap.add_argument("--port", type=int, default=8765)
@@ -994,6 +1251,7 @@ def main():
     a = ap.parse_args()
     if not db.DB.exists():
         sys.exit("还没有数据库,先运行:python3 3-工具/db.py init")
+    threading.Thread(target=_patrol_loop, daemon=True).start()
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), H)
     url = f"http://127.0.0.1:{a.port}/"
     print(f"工作台已启动:{url}  (Ctrl+C 停止)")

@@ -1033,7 +1033,89 @@ main {
 .pill.ok, .pill.run { background: var(--accent-emerald-soft); color: #6ee7b7; }
 .pill.re { background: var(--accent-violet-soft); color: #c4b5fd; }
 .pill.err, .pill.bad { background: var(--accent-coral-soft); color: #fca5a5; }
+.pill.fail { background: rgba(245, 158, 11, 0.16); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.28); }
 .pill.ai { background: rgba(129, 140, 248, 0.15); color: #a5b4fc; }
+.mcard.fail { border-color: rgba(245, 158, 11, 0.28); background: rgba(245, 158, 11, 0.035); }
+.ov-stat.fail-hi { border-color: rgba(245, 158, 11, 0.36); background: rgba(245, 158, 11, 0.08); }
+
+/* 右上角 ? 规则手册抽屉 */
+.rule-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.rule-kpi {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+}
+.rule-kpi .rk { font-size: 11px; color: var(--text-muted); }
+.rule-kpi .rv { font-size: 13px; font-weight: 600; color: #fff; margin-top: 3px; }
+.rule-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.rule-tab {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 140ms;
+}
+.rule-tab:hover { color: #fff; border-color: var(--border-strong); }
+.rule-tab.on { background: #ffffff; color: #07080c; border-color: #ffffff; font-weight: 600; }
+.rule-summary {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  margin-bottom: 14px;
+}
+.rule-summary h4 { margin: 0 0 8px; font-size: 13.5px; color: #e0f2fe; }
+.rule-summary ul { margin: 0; padding-left: 18px; color: var(--text-secondary); font-size: 12.8px; line-height: 1.75; }
+.rule-flow { display: flex; flex-direction: column; gap: 10px; }
+.rule-step {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-subtle);
+}
+.rule-step.human { border-color: rgba(56, 189, 248, 0.28); background: rgba(56, 189, 248, 0.05); }
+.rule-step.fail-gate { border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05); }
+.rule-num {
+  width: 24px; height: 24px; border-radius: 8px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  background: rgba(255, 255, 255, 0.08); color: #fff;
+}
+.rule-step.human .rule-num { background: rgba(56, 189, 248, 0.22); color: #7dd3fc; }
+.rule-step.fail-gate .rule-num { background: rgba(245, 158, 11, 0.22); color: #fcd34d; }
+.rule-md {
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--text-secondary);
+}
+.rule-md h1, .rule-md h2, .rule-md h3 { color: #fff; margin: 14px 0 6px; font-size: 14px; }
+.rule-md h1 { font-size: 15.5px; margin-top: 0; }
+.rule-md ul, .rule-md ol { margin: 6px 0; padding-left: 18px; }
+.rule-md blockquote { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.035); color: var(--text-secondary); }
+.rule-md table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+.rule-md th, .rule-md td { border: 1px solid var(--border-subtle); padding: 6px 8px; text-align: left; }
+.rule-md th { color: #fff; background: rgba(255,255,255,0.04); }
 
 .chk-btn {
   width: 22px;
@@ -1450,7 +1532,8 @@ const SVG_PATHS = {
   search: `<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.2 4.2"/>`,
   alert: `<path d="M12 9v4M12 16.5h.01"/><path d="M10.3 3.9L2.6 17.2a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>`,
   layers: `<polygon points="12 3 21 8 12 13 3 8 12 3"/><polyline points="3 12.5 12 17.5 21 12.5"/><polyline points="3 17 12 22 21 17"/>`,
-  trash: `<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>`
+  trash: `<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>`,
+  help: `<circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.8-2.5 2.2-2.5 3.6"/><circle cx="12" cy="17.2" r="0.6" fill="currentColor" stroke="none"/>`
 };
 
 const STUDIO_ART = {
@@ -1632,11 +1715,11 @@ function items() {
       : run
       ? (col === "sort" ? "AI 整理归档中" : "AI 转写复盘中")
       : doneNoClip
-      ? "已复盘 · 0条合格候选"
+      ? "未通过筛选 · 0条合格"
       : (col === "sort" ? "排队整理" : "排队转写复盘");
     out.push({
       type: "source", id: s.source_id, ids: [s.source_id], title: s.标题 || s.source_id, col, phase: COLS[CI[col]][4], s, objs: [s],
-      state: err ? "err" : run ? "run" : doneNoClip ? "ok" : "queue",
+      state: err ? "err" : run ? "run" : doneNoClip ? "fail" : "queue",
       label
     });
   }
@@ -1713,6 +1796,7 @@ function renderChrome() {
       ${ic("settings", 14)}
       <span>设置</span>
     </button>
+    <button class="icon-ghost" title="查看 SOP 底层逻辑与筛选 / 剪辑 / 文案 / 封面规则" aria-label="规则说明" onclick="openRules()">${ic("help", 16)}</button>
     <button class="icon-ghost" title="刷新" onclick="load(true)">${ic("refresh", 15)}</button>
   `;
   renderLiveSide();
@@ -1872,8 +1956,8 @@ function switchFeedTab(t) {
 
 function board() {
   const all = items();
-  const active = all.filter(x => x.state !== "off");
-  const off = all.filter(x => x.state === "off");
+  const active = all.filter(x => x.state !== "off" && x.state !== "fail");
+  const failed = all.filter(x => x.state === "fail" || x.state === "off");
   const mine = active.filter(x => x.state === "me" || x.state === "err");
   const aiQueue = active.filter(x => ["queue", "run", "wait"].includes(x.state));
   const published = active.filter(x => x.state === "ok");
@@ -1881,9 +1965,10 @@ function board() {
   const auto = (S.自动处理 || {}).开启;
 
   // 若待办为空且有其它任务，自动切到非空标签避免空白困惑
-  if (feedTab === "todo" && !mine.length && active.length) {
+  if (feedTab === "todo" && !mine.length && (active.length || failed.length)) {
     if (aiQueue.length) feedTab = "ai";
     else if (published.length) feedTab = "pub";
+    else if (failed.length) feedTab = "fail";
   }
 
   const isLocal = Boolean(S.项目路径);
@@ -2063,12 +2148,14 @@ function board() {
           AI 处理队列 <span class="cnt">${aiQueue.length}</span>
         </button>
         <button class="feed-tab ${feedTab === "pub" ? "on" : ""}" onclick="switchFeedTab('pub')">
-          已完成与发布 <span class="cnt">${published.length}</span>
+          合格与发布 <span class="cnt">${published.length}</span>
+        </button>
+        <button class="feed-tab ${feedTab === "fail" ? "on" : ""}" onclick="switchFeedTab('fail')">
+          不合格 / 未通过 <span class="cnt">${failed.length}</span>
         </button>
         <button class="feed-tab ${feedTab === "overview" ? "on" : ""}" onclick="switchFeedTab('overview')">
-          全流程总览 <span class="cnt">${active.length}</span>
+          阶段看板 <span class="cnt">${active.length}</span>
         </button>
-        ${off.length ? `<button class="feed-tab ${feedTab === "off" ? "on" : ""}" onclick="switchFeedTab('off')">回收站 <span class="cnt">${off.length}</span></button>` : ""}
       </div>
       <div class="search-box">
         <span class="s-ic">${ic("search", 14)}</span>
@@ -2084,7 +2171,7 @@ function renderFeedContent() {
   const q = searchQ.trim().toLowerCase();
   const match = x => !q || String(x.title || "").toLowerCase().includes(q) || String((x.k && x.k.开头钩子) || "").toLowerCase().includes(q);
   const all = items().filter(match);
-  const active = all.filter(x => x.state !== "off");
+  const active = all.filter(x => x.state !== "off" && x.state !== "fail");
 
   if (feedTab === "overview") {
     return `<div class="macro-board">
@@ -2105,8 +2192,8 @@ function renderFeedContent() {
     list = active.filter(x => ["queue", "run", "wait"].includes(x.state));
   } else if (feedTab === "pub") {
     list = active.filter(x => x.state === "ok");
-  } else if (feedTab === "off") {
-    list = all.filter(x => x.state === "off");
+  } else if (feedTab === "fail" || feedTab === "off") {
+    list = all.filter(x => x.state === "fail" || x.state === "off");
   }
 
   if (!list.length) {
@@ -2129,7 +2216,7 @@ function renderFeedContent() {
 function mediaCard(x) {
   const canPick = x.col === "pick" && x.state === "me" && x.type === "clip";
   const isPicked = picked.has(x.id);
-  const pillCls = { me: "me", err: "err", run: "run", queue: "", ok: "ok", off: "" }[x.state] || "";
+  const pillCls = { me: "me", err: "err", run: "run", queue: "", ok: "ok", fail: "fail", off: "fail" }[x.state] || "";
   const gateDef = STUDIO_GATES.find(g => g.col === x.col);
 
   let durText = "";
@@ -2170,9 +2257,9 @@ function mediaCard(x) {
     subLine = x.s.摘要 || `${x.s.来源} · ${x.s.日期}`;
   }
 
-  const ctaLabel = x.state === "err" ? "去处理" : (x.state === "me" && gateDef) ? gateDef.cta : "查看";
+  const ctaLabel = x.state === "err" ? "去处理" : x.state === "fail" ? "查看原因" : (x.state === "me" && gateDef) ? gateDef.cta : "查看";
 
-  return `<div class="mcard ${x.state === "run" ? "running-card" : x.state === "me" ? "me" : x.state === "err" ? "err" : ""} ${flashId === x.id ? "flash" : ""}" onclick="openItem('${x.type}','${esc(x.id)}')">
+  return `<div class="mcard ${x.state === "run" ? "running-card" : x.state === "me" ? "me" : x.state === "err" ? "err" : x.state === "fail" ? "fail" : ""} ${flashId === x.id ? "flash" : ""}" onclick="openItem('${x.type}','${esc(x.id)}')">
     <div class="mthumb">
       ${thumbImg ? `<img src="${esc(thumbImg)}" alt="">` : ic(COLS[CI[x.col]] ? COLS[CI[x.col]][1] : "film", 22)}
       ${durText ? `<span class="mthumb-dur">${esc(durText)}</span>` : ""}
@@ -2360,22 +2447,24 @@ function overview() {
   const all = items();
   const errN = all.filter(x => x.state === "err").length;
   const activeN = all.filter(x => ["me", "queue", "run", "wait"].includes(x.state)).length;
-  const doneN = all.filter(x => x.state === "ok").length;
-  const offN = all.filter(x => x.state === "off").length;
+  const passSources = S.素材.filter(s => s.状态 === "已复盘" && S.切片.some(k => k.source_id === s.source_id)).length;
+  const doneN = all.filter(x => x.state === "ok").length + passSources;
+  const failN = all.filter(x => x.state === "fail" || x.state === "off").length;
   const stats = [
-    { id: "all", k: "全部记录", v: all.length + S.素材.filter(s => S.切片.some(k => k.source_id === s.source_id)).length },
-    { id: "err", k: "需处理 / 异常", v: errN, cls: errN ? "err-hi" : "" },
+    { id: "all", k: "全部记录", v: all.filter(x => x.type !== "file").length + passSources },
     { id: "active", k: "进行中 / 待拍板", v: activeN },
-    { id: "done", k: "已完成 / 已复盘", v: doneN + S.素材.filter(s => s.状态 === "已复盘" && S.切片.some(k => k.source_id === s.source_id)).length },
-    { id: "off", k: "已放弃 / 回收站", v: offN }
+    { id: "done", k: "合格 · 已完成", v: doneN },
+    { id: "fail", k: "不合格 / 未通过", v: failN, cls: failN ? "fail-hi" : "" },
+    { id: "err", k: "需处理 / 异常", v: errN, cls: errN ? "err-hi" : "" }
   ];
   return `
     <div class="page-head">
       <div>
-        <h2>流程总览与记录清理</h2>
-        <p>按阶段查看所有录像、切片与发布状态；剪不好或不需要的记录可直接从本地 SQLite 移除（绝不删原片）。</p>
+        <h2>流程总览与合格筛选</h2>
+        <p>清晰区分合格成品与不合格/未通过录像；剪不好或不需要的记录可直接从本地 SQLite 移除（绝不删原片）。</p>
       </div>
       <div class="btns">
+        <button class="btn sm" onclick="openRules('select')">${ic("help", 14)} 查看筛选与剪辑规则</button>
         <button class="btn sm" onclick="reveal('data/sop.db')">${ic("folder", 14)} 在访达中定位 sop.db</button>
       </div>
     </div>
@@ -2421,7 +2510,7 @@ function renderOverviewGroups() {
       ? (x.k.开头钩子 || x.k.概要 || `${x.k.起始 || ""}–${x.k.结束 || ""}`)
       : (x.s.摘要 || `${x.s.来源} · ${x.s.日期}`);
     if (!match(x.id, x.title, sub)) continue;
-    const bucket = x.state === "err" ? "err" : x.state === "off" ? "off" : x.state === "ok" ? "done" : "active";
+    const bucket = x.state === "err" ? "err" : (x.state === "fail" || x.state === "off") ? "fail" : x.state === "ok" ? "done" : "active";
     if (ovFilter !== "all" && ovFilter !== bucket) continue;
     const thumb = (x.type === "clip" && ((x.k.成片 && `/thumb?path=${encodeURIComponent(x.k.成片)}&at=2`) || (x.k.预览 && x.k.预览.文件 && `/thumb?path=${encodeURIComponent(x.k.预览.文件)}&at=${Math.max(1, Math.round(x.k.预览.起 || 2))}`)))
       || (x.type === "source" && x.s.文件 && x.s.文件.视频 && x.s.文件.视频[0] && `/thumb?path=${encodeURIComponent(x.s.文件.视频[0])}&at=3`) || "";
@@ -2429,18 +2518,18 @@ function renderOverviewGroups() {
     rows.push({ kind, id: x.id, title: x.title, label: x.label, state: x.state, bucket, sub, thumb, dur, openType: x.type });
   }
 
-  // 把已拆出切片的原始录像也纳入总览（方便查看已完成复盘的整场录像或清理）
+  // 把已拆出合格切片的原始录像纳入「合格 · 已完成」
   for (const s of S.素材) {
     const n = S.切片.filter(k => k.source_id === s.source_id).length;
     if (!n) continue;
-    const sub = s.摘要 || `${s.来源} · ${s.日期} · 已拆出 ${n} 条切片`;
+    const sub = s.摘要 || `${s.来源} · ${s.日期} · 已拆出 ${n} 条合格候选`;
     if (!match(s.source_id, s.标题 || s.source_id, sub)) continue;
     const bucket = s.状态 === "需人工" ? "err" : s.状态 === "已复盘" ? "done" : "active";
     if (ovFilter !== "all" && ovFilter !== bucket) continue;
     const thumb = (s.文件 && s.文件.视频 && s.文件.视频[0]) ? `/thumb?path=${encodeURIComponent(s.文件.视频[0])}&at=3` : "";
     rows.push({
       kind: "source", id: s.source_id, title: s.标题 || s.source_id,
-      label: `${s.状态} · ${n}条切片`, state: bucket === "done" ? "ok" : bucket === "err" ? "err" : "queue",
+      label: `合格 · 拆出 ${n} 条切片`, state: bucket === "done" ? "ok" : bucket === "err" ? "err" : "queue",
       bucket, sub, thumb, dur: "", openType: "source-page"
     });
   }
@@ -2450,10 +2539,10 @@ function renderOverviewGroups() {
   }
 
   const groups = [
-    { key: "err", title: "需处理 / 剪辑异常", hint: "可以直接放弃或移出 SQLite" },
-    { key: "active", title: "进行中 / 待拍板", hint: "AI 处理中或等你审核的条目" },
-    { key: "done", title: "已完成 / 已复盘 / 已发布", hint: "已跑完复盘或已定时发布" },
-    { key: "off", title: "已放弃 / 回收站", hint: "可恢复或彻底从 SQLite 移除" }
+    { key: "err", title: "需处理 / 剪辑异常", hint: "剪辑不达标或异常，可直接放弃或移出 SQLite" },
+    { key: "active", title: "进行中 / 待拍板", hint: "AI 处理中或等你审核的合格条目" },
+    { key: "done", title: "合格 · 已完成 / 已发布", hint: "已拆出合格切片的录像、已定时或已发布成片" },
+    { key: "fail", title: "不合格 / 未通过筛选（含已放弃）", hint: "未满足时长或独立观点标准，可直接查看原因或移出 SQLite" }
   ];
 
   return groups.map(g => {
@@ -2465,7 +2554,7 @@ function renderOverviewGroups() {
         <span class="dim" style="font-weight:400;font-size:12px">${esc(g.hint)}</span>
       </div>
       ${list.map(r => {
-        const pillCls = { me: "me", err: "err", run: "run", ok: "ok" }[r.state] || "";
+        const pillCls = { me: "me", err: "err", run: "run", ok: "ok", fail: "fail", off: "fail" }[r.state] || "";
         const onOpen = r.openType === "source-page" ? `go('sources')` : `openItem('${r.openType}','${esc(r.id)}')`;
         return `<div class="ov-row">
           <div class="ov-row-thumb" onclick="${onOpen}">${r.thumb ? `<img src="${esc(r.thumb)}" alt="">` : ic(r.kind === "source" ? "film" : "scissors", 18)}</div>
@@ -2511,15 +2600,19 @@ function sources() {
     S.素材.map(s => {
       const ks = S.切片.filter(k => k.source_id === s.source_id);
       const c = st => ks.filter(k => k.状态 === st).length;
-      return `<div class="surface-card">
+      const isRejected = s.状态 === "已复盘" && ks.length === 0;
+      const pillCls = s.状态 === "需人工" ? "err" : isRejected ? "fail" : s.状态 === "已复盘" ? "ok" : "";
+      const pillTxt = isRejected ? "未通过筛选 · 0条合格" : s.状态 === "已复盘" ? `合格 · 拆出 ${ks.length} 条` : s.状态;
+      return `<div class="surface-card" ${isRejected ? 'style="border-color:rgba(245,158,11,0.28)"' : ""}>
         <div class="btns" style="justify-content:space-between;align-items:flex-start">
           <div>
-            <h3 style="margin:0;display:flex;align-items:center;gap:8px">${esc(s.标题 || s.source_id)} <span class="pill ${s.状态 === "已复盘" ? "ok" : ""}">${esc(s.状态)}</span></h3>
+            <h3 style="margin:0;display:flex;align-items:center;gap:8px">${esc(s.标题 || s.source_id)} <span class="pill ${pillCls}">${esc(pillTxt)}</span></h3>
             <div class="dim num" style="margin-top:5px">${esc(s.来源)} · ${esc(s.日期)}${s.时长 ? " · " + esc(s.时长) : ""} · 提取 ${ks.length} 条片段（待挑 ${c("候选")} / 已采用 ${ks.length - c("候选") - c("放弃")}）</div>
           </div>
           <div class="btns">
             ${s.文件.文档.map(p => `<button class="btn sm" onclick="openDoc('${esc(p)}')">${ic("doc", 14)} 查看复盘</button>`).join("")}
             ${s.文件.视频[0] ? `<button class="btn sm" onclick="reveal('${esc(s.文件.视频[0])}')">${ic("folder", 14)} 原片目录</button>` : ""}
+            <button class="btn sm bad" onclick="deleteRecord('source','${esc(s.source_id)}','${esc(s.标题 || s.source_id)}')">${ic("trash", 13)} 移除</button>
           </div>
         </div>
         ${s.摘要 ? `<p style="margin:12px 0 0;color:var(--text-secondary);max-width:74ch">${esc(s.摘要)}</p>` : ""}
@@ -2633,8 +2726,168 @@ async function openDoc(p) {
   $("#mask").style.display = "block";
 }
 
+let rulesTab = "flow", rulesCache = {};
+const RULE_TABS = [
+  {
+    id: "flow", label: "整体运行逻辑", file: null,
+    bullets: [
+      "三层解耦架构：1-流程/（怎么流转）× 2-标准/（合格红线）× 3-工具/（具体引擎，可随时替换）。",
+      "所有状态统一由 3-工具/db.py 写入本地 data/sop.db，AI 绝不能越过人工拍板关卡（挑片段 / 看成片 / 选封面 / 确认发布）。",
+      "合格 vs 不合格清晰分流：转写复盘后 0 条达标的录像归入「不合格 / 未通过」；成片不满足 60–90 秒或累计重剪满 3 次自动转「需处理」，可随时移出 SQLite。"
+    ]
+  },
+  {
+    id: "select", label: "筛选与选题", file: "2-标准/选题标准.md",
+    bullets: [
+      "合格核心条件：一条切片 = 一个可脱离原场景独立看懂的观点，起止对齐完整句子边界，且可支撑 60–90 秒成片。",
+      "优先级：真实故事与反转 ＞ 反常识观点 ＞ 职场技巧 ＞ 新概念好比喻 ＞ 工具选型对比；宁缺毋滥，不硬凑条数。",
+      "直接判不合格/不剪：纯屏幕操作演示（竖屏看不清）、合规风险、未经核实断言、隐私内容、有效时长不足 60 秒。"
+    ]
+  },
+  {
+    id: "edit", label: "剪辑与画面", file: "2-标准/剪辑标准.md",
+    bullets: [
+      "硬门禁：成片必须在 60–90 秒内（目标约 75 秒），不在范围内会被 db.py 直接拦截，累计重剪 3 次转「需处理」。",
+      "结构与精剪：前 3 秒必须放最冲突的钩子句；删除口水词、重复口吃与超过 0.6s 的死停，保留自然承接词。",
+      "竖屏 1080×1920 30fps 包装：常驻两行标题栏（第二行金色关键词、不放期号日期）+ 4–6 张金句卡 + 单行 ≤15 字校对字幕。"
+    ]
+  },
+  {
+    id: "copy", label: "文案与标题", file: "2-标准/文案标准.md",
+    bullets: [
+      "冲突感优先：每条至少命中 1 种冲突来源（对立 / 反常识 / 损失 / 身份 / 悬念 / 画面），且必须是视频里真实兑现的观点。",
+      "3 候选机制：AI 用 7 大公式生成 3 个候选标题 + 3 组封面字与图形建议并标注推荐；抖音标题 ≤30 字、冲突放前 10 字。",
+      "绝对红线：禁用极限词（最/第一/唯一/100%）、导流词（微信/加群）、期号日期、编造经历或点名学员/机构。"
+    ]
+  },
+  {
+    id: "cover", label: "封面设计", file: "2-标准/封面标准.md",
+    bullets: [
+      "统一视觉：文字 + 图形风格（默认不用真人人脸），两行超粗大字（白字 + 金色关键词）占画面高度 ≥30%，深色背景不超过 3 主色。",
+      "出图流程：AI 先出 3 张竖版 3:4 候选 → 你在「选封面」点选 1 张 → AI 自动重排同设计横版 4:3。",
+      "失败降级：AI 生图连续 2 次不达标自动退回本地模板封面，仍失败才标「需人工」。"
+    ]
+  },
+  {
+    id: "pub", label: "发布与复盘", file: "2-标准/平台规则.md",
+    bullets: [
+      "最高安全红线：只设「定时发布」，绝不「立即发布」；必须提前 2 小时以上、14 天以内，默认每日 10:00 / 12:00 空档。",
+      "平台保护：不导流、不改资料、不私信/删作品；遇登录或验证码立即停下交由人工处理。",
+      "自我进化闭环：发布后自动回收 24h / 72h / 7d 数据，并结合你的挑片/看片/选封面决定沉淀到「AI 口味」持续迭代标准。"
+    ]
+  }
+];
+
+function mdToHtml(src) {
+  const lines = String(src || "").replace(/\r\n/g, "\n").split("\n");
+  let out = "", inUl = false, inTable = false, tableRows = [];
+  const inline = s => esc(s)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<b style='color:#fff'>$1</b>");
+  const flushUl = () => { if (inUl) { out += "</ul>"; inUl = false; } };
+  const flushTable = () => {
+    if (!inTable) return;
+    const body = tableRows.filter(r => !/^\|[\s\-:|]+\|$/.test(r.trim()));
+    if (body.length) {
+      out += "<table>" + body.map((r, idx) => {
+        const cells = r.trim().replace(/^\||\|$/g, "").split("|").map(c => inline(c.trim()));
+        const tag = idx === 0 ? "th" : "td";
+        return `<tr>${cells.map(c => `<${tag}>${c}</${tag}>`).join("")}</tr>`;
+      }).join("") + "</table>";
+    }
+    inTable = false; tableRows = [];
+  };
+  for (const raw of lines) {
+    const l = raw.trim();
+    if (l.startsWith("|") && l.endsWith("|")) { flushUl(); inTable = true; tableRows.push(l); continue; }
+    flushTable();
+    if (!l) { flushUl(); continue; }
+    if (l.startsWith("### ")) { flushUl(); out += `<h3>${inline(l.slice(4))}</h3>`; }
+    else if (l.startsWith("## ")) { flushUl(); out += `<h2>${inline(l.slice(3))}</h2>`; }
+    else if (l.startsWith("# ")) { flushUl(); out += `<h1>${inline(l.slice(2))}</h1>`; }
+    else if (l.startsWith("> ")) { flushUl(); out += `<blockquote>${inline(l.slice(2))}</blockquote>`; }
+    else if (/^[-*]\s+/.test(l) || /^\d+\.\s+/.test(l)) {
+      if (!inUl) { out += "<ul>"; inUl = true; }
+      out += `<li>${inline(l.replace(/^([-*]|\d+\.)\s+/, ""))}</li>`;
+    } else { flushUl(); out += `<p style="margin:6px 0">${inline(l)}</p>`; }
+  }
+  flushUl(); flushTable();
+  return out;
+}
+
+async function openRules(tab) {
+  if (tab) rulesTab = tab;
+  openId = null;
+  openKind = "rules";
+  const cfg = (S && S.配置) || {};
+  const dur = (cfg.成片时长 || [60, 90]).join("–") + " 秒";
+  const cur = RULE_TABS.find(t => t.id === rulesTab) || RULE_TABS[0];
+
+  const flowHtml = `
+    <div class="rule-flow">
+      <div class="rule-step"><div class="rule-num">0</div><div><b style="color:#fff">整理归档（AI 自动）</b><div class="dim" style="margin-top:3px">把「待加工」里的录像无损归档至已处理目录并建软链、登记进本地 SQLite <code>sources</code> 表，绝不删原片。</div></div></div>
+      <div class="rule-step"><div class="rule-num">1</div><div><b style="color:#fff">本机 GPU 转写 + 复盘筛选（AI 自动）</b><div class="dim" style="margin-top:3px">离线调用 Apple Silicon <code>mlx_whisper</code> 出逐字稿，再按《选题标准》写课程复盘并筛选具备独立观点且够 60–90s 的候选片段。</div></div></div>
+      <div class="rule-step fail-gate"><div class="rule-num">!</div><div><b style="color:#fcd34d">合格 vs 不合格自动分流</b><div class="dim" style="margin-top:3px">若原录像有效内容不足、无独立观点或命中避雷清单，AI 按宁缺毋滥输出 0 条候选，自动标为<b>「未通过筛选」</b>归入「不合格 / 未通过」专区，可一键查看原因或移出 SQLite。</div></div></div>
+      <div class="rule-step human"><div class="rule-num">2</div><div><b style="color:#7dd3fc">人工关卡 · 挑片段</b><div class="dim" style="margin-top:3px">勾选真正想剪的高光片段（可附带自定义剪辑要求），未勾选的一键放弃，你的选择同步沉淀到 AI 口味库。</div></div></div>
+      <div class="rule-step"><div class="rule-num">3</div><div><b style="color:#fff">精剪与竖屏包装（AI 自动 · 当前 ${esc(cfg.剪辑工具 || "ffmpeg")}）</b><div class="dim" style="margin-top:3px">钩子前置、去口水词/死停、合成 1080×1920 竖屏 + 标题栏 + 金句卡 + 校对字幕；成片不在 ${esc(dur)} 内会被 <code>db.py</code> 拦截重剪（上限 ${cfg.重剪上限 || 3} 次，满次转需处理）。</div></div></div>
+      <div class="rule-step human"><div class="rule-num">4</div><div><b style="color:#7dd3fc">人工关卡 · 看成片</b><div class="dim" style="margin-top:3px">在线预览竖屏成片：满意点「通过」，不满意写原因打回重剪，实在不要可直接「放弃」或「移出 SQLite」。</div></div></div>
+      <div class="rule-step"><div class="rule-num">5</div><div><b style="color:#fff">爆款文案 + 3 候选封面（AI 自动）</b><div class="dim" style="margin-top:3px">按《文案标准》生成 3 组冲突公式标题与标签；按《封面标准》生成 3 张文字+图形竖版 3:4 封面。</div></div></div>
+      <div class="rule-step human"><div class="rule-num">6</div><div><b style="color:#7dd3fc">人工关卡 · 选封面 & 确认定时发布</b><div class="dim" style="margin-top:3px">挑定 1 张竖版后 AI 自动延展横版 4:3；你最终核对标题授权后，AI 仅设为<b>定时发布</b>（${esc(((cfg.发布排期 || {}).时间点 || ["10:00","12:00"]).join(" / "))}），并在 24h / 72h / 7d 自动回收播放数据反哺规则迭代。</div></div></div>
+    </div>`;
+
+  $("#drawer").innerHTML = `
+    <div class="dh">
+      <div>
+        <h2>SOP 底层逻辑与判断规则</h2>
+        <div class="dim" style="margin-top:4px">实时读取项目 <code>2-标准/</code> 与 <code>配置.json</code>，AI 每一步严格按以下规则执行</div>
+      </div>
+      <button class="btn sm" onclick="closeDrawer()">关闭</button>
+    </div>
+
+    <div class="rule-kpis">
+      <div class="rule-kpi"><div class="rk">成片时长硬门禁</div><div class="rv">${esc(dur)}</div></div>
+      <div class="rule-kpi"><div class="rk">重剪上限 / 剪辑引擎</div><div class="rv">${cfg.重剪上限 || 3} 次 · ${esc(cfg.剪辑工具 || "ffmpeg")}</div></div>
+      <div class="rule-kpi"><div class="rk">发布平台 / 模式</div><div class="rv">${esc((cfg.发布平台 || ["抖音"]).join("、"))} · 仅定时</div></div>
+    </div>
+
+    <div class="rule-tabs">
+      ${RULE_TABS.map(t => `<button class="rule-tab ${t.id === rulesTab ? "on" : ""}" onclick="openRules('${t.id}')">${esc(t.label)}</button>`).join("")}
+    </div>
+
+    <div class="rule-summary">
+      <h4>${esc(cur.label)} · 核心要点</h4>
+      <ul>${cur.bullets.map(b => `<li>${esc(b)}</li>`).join("")}</ul>
+    </div>
+
+    ${cur.file
+      ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span class="dim">底层标准原文：<code>${esc(cur.file)}</code></span>
+          <button class="btn xs" onclick="reveal('${esc(cur.file)}')">${ic("folder", 12)} 在访达中打开并编辑</button>
+        </div>
+        <div class="rule-md" id="rule-md-body">正在加载规则原文…</div>`
+      : flowHtml}`;
+
+  $("#drawer").classList.add("open");
+  $("#mask").style.display = "block";
+
+  if (cur.file) {
+    try {
+      if (!rulesCache[cur.file]) {
+        const resp = await fetch(file(cur.file));
+        rulesCache[cur.file] = resp.ok ? await resp.text() : "（云端静态预览模式无法读取本地规则文件，请在本地 http://127.0.0.1:8765/ 查看实时标准原文）";
+      }
+      const box = $("#rule-md-body");
+      if (box && openKind === "rules" && rulesTab === cur.id) box.innerHTML = mdToHtml(rulesCache[cur.file]);
+    } catch (e) {
+      const box = $("#rule-md-body");
+      if (box) box.textContent = "加载规则文件失败：" + e.message;
+    }
+  }
+}
+
 function renderDrawer() {
   if (openKind === "settings") return openSettings();
+  if (openKind === "rules") return openRules();
   const x = items().find(i => i.id === openId && i.type === openKind) || (openKind === "source" ? null : items().find(i => i.id === openId));
   if (!x) { closeDrawer(); return; }
   if (x.type === "file") {
@@ -2684,12 +2937,13 @@ function renderDrawer() {
       ${x.state === "err"
         ? `<div class="task-panel err">${errBlock(x, false)}</div>`
         : isDone
-        ? `<div class="task-panel">
-            <div class="task-lead">${ic("check", 16)} 转写与复盘已完成${clipCount === 0 ? "（未拆出合格候选片段）" : `（已拆出 ${clipCount} 条候选）`}</div>
+        ? `<div class="task-panel ${clipCount === 0 ? "err" : ""}" ${clipCount === 0 ? 'style="border-color:rgba(245,158,11,0.36);background:rgba(245,158,11,0.06)"' : ""}>
+            <div class="task-lead" ${clipCount === 0 ? 'style="color:#fcd34d"' : ""}>${ic(clipCount === 0 ? "alert" : "check", 16)} ${clipCount === 0 ? "未通过筛选（0 条合格短视频）" : `筛选通过（已拆出 ${clipCount} 条合格候选）`}</div>
             ${s.摘要 ? `<div class="callout" style="margin-top:10px;line-height:1.75">${esc(s.摘要)}</div>` : ""}
-            ${clipCount === 0 ? `<div class="dim" style="margin-top:10px;font-size:13px;line-height:1.7">AI 已完成语音转写并写完复盘报告，但按当前成片标准（${esc((S.配置.成片时长 || [60, 90]).join("–"))} 秒完整独立观点）判定本录像暂无合格候选，因此未硬凑进入「挑片段」。可点下方按钮查看完整复盘报告与不建议剪的原因。</div>` : ""}
+            ${clipCount === 0 ? `<div class="dim" style="margin-top:10px;font-size:13px;line-height:1.7">AI 已完成转写与内容评估，但按当前《选题标准》与成片门禁（${esc((S.配置.成片时长 || [60, 90]).join("–"))} 秒完整独立观点）判定本录像<b>不合格</b>，因此已自动拦截并归入「不合格 / 未通过」专区。可查看复盘明细或直接移出 SQLite。</div>` : ""}
             <div class="btns" style="margin-top:14px">
               ${docs.map(p => `<button class="btn sm pri" onclick="openDoc('${esc(p)}')">${ic("doc", 14)} 查看完整复盘报告</button>`).join("")}
+              <button class="btn sm" onclick="openRules('select')">${ic("help", 13)} 查看筛选规则</button>
               <button class="btn sm" onclick="resume('source','${esc(s.source_id)}','已整理')">重新复盘选片</button>
               <button class="btn sm bad" onclick="deleteRecord('source','${esc(s.source_id)}','${esc(x.title)}')">${ic("trash", 13)} 移出 SQLite</button>
             </div>
